@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Eye, EyeOff, LogIn, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,12 +10,10 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { AnimatedWrapper } from "@/components/ui/animated-wrapper";
 
-const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-});
-
-type LoginData = z.infer<typeof loginSchema>;
+interface LoginData {
+  email: string;
+  password: string;
+}
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -29,9 +25,7 @@ const Login = () => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginData>({
-    resolver: zodResolver(loginSchema),
-  });
+  } = useForm<LoginData>();
 
   const onSubmit = async (data: LoginData) => {
     setIsLoading(true);
@@ -72,7 +66,13 @@ const Login = () => {
                     type="email"
                     placeholder="seu.email@empresa.com"
                     className="pl-10"
-                    {...register("email")}
+                    {...register("email", { 
+                      required: "Email é obrigatório",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Email inválido"
+                      }
+                    })}
                   />
                 </div>
                 {errors.email && (
@@ -88,7 +88,13 @@ const Login = () => {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Digite sua senha"
-                    {...register("password")}
+                    {...register("password", { 
+                      required: "Senha é obrigatória",
+                      minLength: {
+                        value: 6,
+                        message: "Senha deve ter pelo menos 6 caracteres"
+                      }
+                    })}
                   />
                   <Button
                     type="button"
