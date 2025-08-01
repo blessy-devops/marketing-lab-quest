@@ -1,45 +1,154 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AppLayout } from "./components/layout/AppLayout";
-import Dashboard from "./pages/Dashboard";
-import ExperimentsList from "./pages/ExperimentsList";
-import NewExperiment from "./pages/NewExperiment";
-import ExperimentDetails from "./pages/ExperimentDetails";
-import Gallery from "./pages/Gallery";
-import Reports from "./pages/Reports";
-import Analytics from "./pages/Analytics";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { AuthProvider } from "@/components/AuthProvider";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { LazyWrapper } from "@/components/ui/lazy-wrapper";
+import { AppLayout } from "@/components/layout/AppLayout";
+
+// Lazy load pages
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const ExperimentsList = lazy(() => import("@/pages/ExperimentsList"));
+const ExperimentDetails = lazy(() => import("@/pages/ExperimentDetails"));
+const NewExperiment = lazy(() => import("@/pages/NewExperiment"));
+const Analytics = lazy(() => import("@/pages/Analytics"));
+const Reports = lazy(() => import("@/pages/Reports"));
+const Gallery = lazy(() => import("@/pages/Gallery"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+
+// Auth pages
+const Login = lazy(() => import("@/pages/Login"));
+const Signup = lazy(() => import("@/pages/Signup"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+
+// Protected Layout Component
+const ProtectedLayout = () => (
+  <ProtectedRoute>
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  </ProtectedRoute>
+);
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <ThemeProvider defaultTheme="system" storageKey="marketing-lab-theme">
-    <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppLayout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/experimentos" element={<ExperimentsList />} />
-            <Route path="/experimentos/novo" element={<NewExperiment />} />
-            <Route path="/experimentos/:id" element={<ExperimentDetails />} />
-            <Route path="/galeria" element={<Gallery />} />
-            <Route path="/relatorios" element={<Reports />} />
-            <Route path="/analytics" element={<Analytics />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AppLayout>
-      </BrowserRouter>
-    </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+function App() {
+  return (
+    <ThemeProvider defaultTheme="system" storageKey="marketing-lab-theme">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route
+                  path="/login"
+                  element={
+                    <LazyWrapper>
+                      <Login />
+                    </LazyWrapper>
+                  }
+                />
+                <Route
+                  path="/signup"
+                  element={
+                    <LazyWrapper>
+                      <Signup />
+                    </LazyWrapper>
+                  }
+                />
+                <Route
+                  path="/forgot-password"
+                  element={
+                    <LazyWrapper>
+                      <ForgotPassword />
+                    </LazyWrapper>
+                  }
+                />
+
+                {/* Protected Routes */}
+                <Route path="/" element={<ProtectedLayout />}>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route
+                    path="dashboard"
+                    element={
+                      <LazyWrapper>
+                        <Dashboard />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="experimentos"
+                    element={
+                      <LazyWrapper>
+                        <ExperimentsList />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="experimentos/:id"
+                    element={
+                      <LazyWrapper>
+                        <ExperimentDetails />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="experimentos/novo"
+                    element={
+                      <ProtectedRoute requiredRole="editor">
+                        <LazyWrapper>
+                          <NewExperiment />
+                        </LazyWrapper>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <LazyWrapper>
+                        <Analytics />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="relatorios"
+                    element={
+                      <LazyWrapper>
+                        <Reports />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="galeria"
+                    element={
+                      <LazyWrapper>
+                        <Gallery />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="*"
+                    element={
+                      <LazyWrapper>
+                        <NotFound />
+                      </LazyWrapper>
+                    }
+                  />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+          <Toaster />
+          <Sonner />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
 
 export default App;
