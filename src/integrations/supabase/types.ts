@@ -49,6 +49,38 @@ export type Database = {
           },
         ]
       }
+      canal_tipo_sugestao: {
+        Row: {
+          canal: string
+          created_at: string
+          id: string
+          peso: number | null
+          tipo_id: string | null
+        }
+        Insert: {
+          canal: string
+          created_at?: string
+          id?: string
+          peso?: number | null
+          tipo_id?: string | null
+        }
+        Update: {
+          canal?: string
+          created_at?: string
+          id?: string
+          peso?: number | null
+          tipo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canal_tipo_sugestao_tipo_id_fkey"
+            columns: ["tipo_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_experimento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comentarios: {
         Row: {
           created_at: string
@@ -276,6 +308,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subtipos_experimento: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          descricao: string | null
+          exemplos: string | null
+          id: string
+          nome: string
+          ordem: number | null
+          tipo_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          exemplos?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+          tipo_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          exemplos?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+          tipo_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtipos_experimento_tipo_id_fkey"
+            columns: ["tipo_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_experimento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tipos_experimento: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          cor: string | null
+          created_at: string
+          descricao: string | null
+          icone: string | null
+          id: string
+          nome: string
+          ordem: number | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          cor?: string | null
+          created_at?: string
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          cor?: string | null
+          created_at?: string
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
