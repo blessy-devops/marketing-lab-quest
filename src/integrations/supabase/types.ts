@@ -14,7 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      anexos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          experimento_id: string
+          id: string
+          tipo: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          experimento_id: string
+          id?: string
+          tipo: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          experimento_id?: string
+          id?: string
+          tipo?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anexos_experimento_id_fkey"
+            columns: ["experimento_id"]
+            isOneToOne: false
+            referencedRelation: "experimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experimentos: {
+        Row: {
+          canais: string[] | null
+          created_at: string
+          data_fim: string | null
+          data_inicio: string | null
+          hipotese: string | null
+          id: string
+          nome: string
+          responsavel: string | null
+          status: string | null
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          canais?: string[] | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          hipotese?: string | null
+          id?: string
+          nome: string
+          responsavel?: string | null
+          status?: string | null
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          canais?: string[] | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          hipotese?: string | null
+          id?: string
+          nome?: string
+          responsavel?: string | null
+          status?: string | null
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      metricas: {
+        Row: {
+          created_at: string
+          experimento_id: string
+          id: string
+          nome: string
+          tipo: string
+          unidade: string | null
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string
+          experimento_id: string
+          id?: string
+          nome: string
+          tipo: string
+          unidade?: string | null
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string
+          experimento_id?: string
+          id?: string
+          nome?: string
+          tipo?: string
+          unidade?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metricas_experimento_id_fkey"
+            columns: ["experimento_id"]
+            isOneToOne: false
+            referencedRelation: "experimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resultados: {
+        Row: {
+          acoes: string | null
+          aprendizados: string | null
+          causas: string | null
+          created_at: string
+          experimento_id: string
+          fatos: string | null
+          id: string
+          roi: number | null
+          sucesso: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          acoes?: string | null
+          aprendizados?: string | null
+          causas?: string | null
+          created_at?: string
+          experimento_id: string
+          fatos?: string | null
+          id?: string
+          roi?: number | null
+          sucesso?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          acoes?: string | null
+          aprendizados?: string | null
+          causas?: string | null
+          created_at?: string
+          experimento_id?: string
+          fatos?: string | null
+          id?: string
+          roi?: number | null
+          sucesso?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resultados_experimento_id_fkey"
+            columns: ["experimento_id"]
+            isOneToOne: true
+            referencedRelation: "experimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
