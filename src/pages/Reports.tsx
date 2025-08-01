@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   BarChart, 
   LineChart, 
+  ComposedChart,
   PieChart, 
   ResponsiveContainer, 
   XAxis, 
@@ -419,7 +420,7 @@ export default function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={processedData.performanceByPeriod}>
+                <ComposedChart data={processedData.performanceByPeriod}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="periodo" />
                   <YAxis yAxisId="left" />
@@ -428,7 +429,7 @@ export default function Reports() {
                   <Legend />
                   <Bar yAxisId="left" dataKey="experimentos" fill="#8884d8" name="Experimentos" />
                   <Line yAxisId="right" type="monotone" dataKey="taxa_sucesso" stroke="#82ca9d" name="Taxa Sucesso (%)" />
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
