@@ -260,13 +260,13 @@ const ExperimentDetails = () => {
               </CardHeader>
               <CardContent>
                 <TipoExperimentoDisplay 
-                  tipoId={experimento.tipo_experimento_id || undefined}
-                  subtipoId={experimento.subtipo_experimento_id || undefined}
-                  subtipoCustomizado={experimento.subtipo_customizado || undefined}
+                  tipoId={(experimento as any).tipo_experimento_id || undefined}
+                  subtipoId={(experimento as any).subtipo_experimento_id || undefined}
+                  subtipoCustomizado={(experimento as any).subtipo_customizado || undefined}
                   showDescription={true}
                   size="sm"
                 />
-                {(!experimento.tipo_experimento_id && experimento.tipo) && (
+                {(!(experimento as any).tipo_experimento_id && experimento.tipo) && (
                   <div className="mt-2 p-2 bg-muted rounded text-sm">
                     <span className="text-muted-foreground">Tipo legado:</span> {experimento.tipo}
                   </div>
