@@ -49,6 +49,33 @@ export type Database = {
           },
         ]
       }
+      comentarios: {
+        Row: {
+          created_at: string
+          experimento_id: string
+          id: string
+          texto: string
+          updated_at: string | null
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          experimento_id: string
+          id?: string
+          texto: string
+          updated_at?: string | null
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          experimento_id?: string
+          id?: string
+          texto?: string
+          updated_at?: string | null
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       experimentos: {
         Row: {
           canais: string[] | null

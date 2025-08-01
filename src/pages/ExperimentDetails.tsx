@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit2, Copy, Trash2, Plus, Upload, FileText, Image, Link, Calendar, User, Target, TrendingUp, CheckCircle, XCircle, MessageSquare, History } from "lucide-react";
+import { ArrowLeft, Edit2, Copy, Trash2, Plus, Upload, FileText, Image, Link, Calendar, User, Target, TrendingUp, CheckCircle, XCircle, MessageSquare, History, Send, Edit, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useExperimentosComResultados } from "@/hooks/useSupabaseData";
+import { useComentarios } from "@/hooks/useComentarios";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type Metrica = Tables<"metricas">;
 
@@ -21,8 +25,22 @@ const ExperimentDetails = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [metricas, setMetricas] = useState<Metrica[]>([]);
+  const [novoComentario, setNovoComentario] = useState("");
+  const [editingText, setEditingText] = useState("");
 
   const experimento = experimentos?.find(exp => exp.id === id);
+  
+  // Hook de comentários
+  const {
+    comentarios,
+    loading: loadingComentarios,
+    user,
+    editingId,
+    setEditingId,
+    adicionarComentario,
+    editarComentario,
+    excluirComentario
+  } = useComentarios(id || "");
 
   // Buscar métricas do experimento
   useEffect(() => {
@@ -452,21 +470,155 @@ const ExperimentDetails = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            Comentários e Notas
+            Comentários e Notas ({comentarios.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Textarea placeholder="Adicionar comentário..." />
-          <Button>Adicionar Comentário</Button>
-          
-          {/* Exemplo de comentário */}
-          <div className="border-l-4 border-primary pl-4 py-2">
-            <div className="flex justify-between items-start mb-2">
-              <p className="font-medium">João Silva</p>
-              <span className="text-sm text-muted-foreground">Há 2 dias</span>
+          {/* Formulário para novo comentário */}
+          {user && (
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>
+                    {user.email?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                  <Textarea
+                    placeholder="Adicionar comentário..."
+                    value={novoComentario}
+                    onChange={(e) => setNovoComentario(e.target.value)}
+                    className="min-h-[60px]"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={async () => {
+                        await adicionarComentario(novoComentario);
+                        setNovoComentario("");
+                      }}
+                      disabled={!novoComentario.trim()}
+                      size="sm"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Comentar
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p>Resultados muito positivos! Sugestão: repetir a campanha no Black Friday.</p>
-          </div>
+          )}
+
+          {/* Lista de comentários */}
+          {loadingComentarios ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex gap-3">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : comentarios.length > 0 ? (
+            <div className="space-y-4 mt-6">
+              {comentarios.map((comentario) => (
+                <div key={comentario.id} className="border-l-4 border-primary/20 pl-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex gap-3 flex-1">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>
+                          {comentario.usuario_nome?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="font-medium text-sm">
+                            {comentario.usuario_nome || 'Usuário'}
+                          </p>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(comentario.created_at), {
+                              addSuffix: true,
+                              locale: ptBR
+                            })}
+                          </span>
+                          {comentario.updated_at && comentario.updated_at !== comentario.created_at && (
+                            <Badge variant="outline" className="text-xs">
+                              Editado
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {editingId === comentario.id ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              className="min-h-[60px]"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={async () => {
+                                  await editarComentario(comentario.id, editingText);
+                                }}
+                              >
+                                Salvar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingId(null);
+                                  setEditingText("");
+                                }}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {comentario.texto}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Botões de ação (só para comentários próprios) */}
+                    {user && comentario.usuario_id === user.id && editingId !== comentario.id && (
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingId(comentario.id);
+                            setEditingText(comentario.texto);
+                          }}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => excluirComentario(comentario.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Nenhum comentário ainda.</p>
+              <p className="text-sm">Seja o primeiro a comentar!</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
