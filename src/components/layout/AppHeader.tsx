@@ -1,4 +1,4 @@
-import { Bell, Search, Settings, User } from "lucide-react";
+import { Search, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 
 export function AppHeader() {
   return (
@@ -30,10 +31,7 @@ export function AppHeader() {
 
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-          <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full"></span>
-        </Button>
+        <NotificationDropdown />
 
         {/* Settings */}
         <Button variant="ghost" size="icon">

@@ -129,6 +129,44 @@ export type Database = {
           },
         ]
       }
+      notificacoes: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          experimento_id: string | null
+          id: string
+          lida: boolean | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          experimento_id?: string | null
+          id?: string
+          lida?: boolean | null
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          experimento_id?: string | null
+          id?: string
+          lida?: boolean | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_experimento_id_fkey"
+            columns: ["experimento_id"]
+            isOneToOne: false
+            referencedRelation: "experimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resultados: {
         Row: {
           acoes: string | null
