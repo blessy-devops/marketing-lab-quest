@@ -298,7 +298,7 @@ export default function Dashboard() {
                         <Badge variant="outline" className="text-xs">
                           {getTipoLabel(exp.tipo)}
                         </Badge>
-                        {exp.resultado?.sucesso !== null && (
+                        {exp.resultado?.sucesso !== null && exp.resultado?.sucesso !== undefined && (
                           <Badge variant={exp.resultado.sucesso ? "default" : "destructive"} className="text-xs">
                             {exp.resultado.sucesso ? "Sucesso" : "Falha"}
                           </Badge>
