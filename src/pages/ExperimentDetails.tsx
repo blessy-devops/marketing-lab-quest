@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { TipoExperimentoDisplay } from "@/components/forms/TipoExperimentoDisplay";
 
 type Metrica = Tables<"metricas">;
 
@@ -254,11 +255,22 @@ const ExperimentDetails = () => {
             {/* Informações Básicas */}
             <Card>
               <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tipo</CardTitle>
+                <CardTitle className="text-sm font-medium">Tipo de Experimento</CardTitle>
                 <Target className="h-4 w-4 ml-auto text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{experimento.tipo || 'Não definido'}</div>
+                <TipoExperimentoDisplay 
+                  tipoId={experimento.tipo_experimento_id || undefined}
+                  subtipoId={experimento.subtipo_experimento_id || undefined}
+                  subtipoCustomizado={experimento.subtipo_customizado || undefined}
+                  showDescription={true}
+                  size="sm"
+                />
+                {(!experimento.tipo_experimento_id && experimento.tipo) && (
+                  <div className="mt-2 p-2 bg-muted rounded text-sm">
+                    <span className="text-muted-foreground">Tipo legado:</span> {experimento.tipo}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

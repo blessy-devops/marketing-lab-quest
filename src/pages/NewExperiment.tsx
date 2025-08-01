@@ -26,11 +26,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState, useEffect } from "react";
+import { TipoExperimentoSelector } from "@/components/forms/TipoExperimentoSelector";
+import { CANAIS_OPTIONS } from "@/constants/canais";
 
 interface FormData {
   tipoCadastro: 'futuro' | 'realizado';
   nome: string;
-  tipo: string;
+  tipo_experimento_id?: string;
+  subtipo_experimento_id?: string;
+  subtipo_customizado?: string;
+  tipo: string; // Keep for backward compatibility during transition
   responsavel?: string;
   data_inicio?: Date;
   data_fim?: Date;
@@ -56,24 +61,12 @@ interface FormData {
   aprendizados?: string;
 }
 
-const canaisOptions = [
-  "Meta Ads",
-  "Google Ads", 
-  "TikTok Shop",
-  "Mercado Livre",
-  "Site",
-  "Email",
-  "WhatsApp"
-];
+// Remove old static arrays - now using dynamic data
+// const canaisOptions = [...]
+// const tiposExperimento = [...] 
 
-const tiposExperimento = [
-  { value: "ab-test", label: "Teste A/B" },
-  { value: "multivariate", label: "Teste Multivariado" },
-  { value: "split-url", label: "Split URL" },
-  { value: "redirect", label: "Teste de Redirecionamento" },
-  { value: "landing-page", label: "Landing Page" },
-  { value: "email", label: "E-mail Marketing" }
-];
+// Get channel names for compatibility
+const canaisOptions = CANAIS_OPTIONS.map(c => c.value);
 
 export default function NewExperiment() {
   const navigate = useNavigate();
@@ -84,6 +77,9 @@ export default function NewExperiment() {
       tipoCadastro: 'futuro',
       nome: "",
       tipo: "",
+      tipo_experimento_id: "",
+      subtipo_experimento_id: "",
+      subtipo_customizado: "",
       responsavel: "",
       status: "planejado",
       canais: [],
@@ -110,6 +106,7 @@ export default function NewExperiment() {
   });
 
   const tipoCadastro = form.watch('tipoCadastro');
+  const canaisSelecionados = form.watch('canais');
 
   // Ajustar status baseado no tipo de cadastro
   useEffect(() => {
@@ -121,6 +118,11 @@ export default function NewExperiment() {
   }, [tipoCadastro, form]);
 
   const onSubmit = async (data: FormData) => {
+    // Validar tipo de experimento
+    if (!data.tipo_experimento_id) {
+      toast.error('Selecione o tipo de experimento');
+      return;
+    }
     // Validações
     if (tipoCadastro === 'futuro') {
       if (data.data_inicio && data.data_inicio < new Date()) {
@@ -151,18 +153,24 @@ export default function NewExperiment() {
     
     try {
       // Criar experimento
+      const experimentoData = {
+        nome: data.nome,
+        tipo: data.tipo || 'custom', // Keep for backward compatibility
+        responsavel: data.responsavel,
+        status: data.status,
+        canais: data.canais,
+        hipotese: data.hipotese,
+        data_inicio: data.data_inicio?.toISOString().split('T')[0],
+        data_fim: data.data_fim?.toISOString().split('T')[0],
+        // Store tipo_experimento_id in tipo field for now
+        tipo_experimento_id: data.tipo_experimento_id,
+        subtipo_experimento_id: data.subtipo_experimento_id,
+        subtipo_customizado: data.subtipo_customizado
+      };
+
       const { data: novoExperimento, error: experimentoError } = await supabase
         .from('experimentos')
-        .insert({
-          nome: data.nome,
-          tipo: data.tipo,
-          responsavel: data.responsavel,
-          status: data.status,
-          canais: data.canais,
-          hipotese: data.hipotese,
-          data_inicio: data.data_inicio?.toISOString().split('T')[0],
-          data_fim: data.data_fim?.toISOString().split('T')[0],
-        })
+        .insert(experimentoData)
         .select()
         .single();
 
@@ -336,30 +344,13 @@ export default function NewExperiment() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="tipo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de Experimento *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o tipo" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {tiposExperimento.map((tipo) => (
-                              <SelectItem key={tipo.value} value={tipo.value}>
-                                {tipo.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {/* Novo Seletor de Tipos Dinâmicos */}
+                  <div className="md:col-span-2">
+                    <TipoExperimentoSelector 
+                      control={form.control} 
+                      canaisSelecionados={canaisSelecionados}
+                    />
+                  </div>
                 </div>
 
                 <FormField
