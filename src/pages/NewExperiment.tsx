@@ -153,6 +153,22 @@ export default function NewExperiment() {
         if (anexosError) throw anexosError;
       }
 
+      // Criar notificação se o experimento for iniciado
+      if (shouldStart) {
+        const { error: notificationError } = await supabase
+          .from('notificacoes')
+          .insert([{
+            tipo: 'experimento_concluido',
+            titulo: `Experimento "${experimento.nome}" foi iniciado`,
+            descricao: 'O experimento foi criado e iniciado com sucesso.',
+            experimento_id: experimento.id,
+          }]);
+        
+        if (notificationError) {
+          console.warn('Erro ao criar notificação:', notificationError);
+        }
+      }
+
       toast({
         title: shouldStart ? "Experimento iniciado!" : "Experimento salvo!",
         description: shouldStart 
