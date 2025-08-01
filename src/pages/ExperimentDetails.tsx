@@ -10,23 +10,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useExperimentosComResultados } from "@/hooks/useSupabaseData";
 import { useComentarios } from "@/hooks/useComentarios";
+import { useAuth } from "@/hooks/useAuth";
+import { DeleteExperimentDialog } from "@/components/DeleteExperimentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 type Metrica = Tables<"metricas">;
 
 const ExperimentDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasRole } = useAuth();
   const { data: experimentos, loading, error } = useExperimentosComResultados();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [metricas, setMetricas] = useState<Metrica[]>([]);
   const [novoComentario, setNovoComentario] = useState("");
   const [editingText, setEditingText] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const experimento = experimentos?.find(exp => exp.id === id);
   
@@ -105,6 +110,56 @@ const ExperimentDetails = () => {
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!experimento) return;
+    
+    try {
+      // Criar experimento duplicado
+      const { data: novoExperimento, error } = await supabase
+        .from('experimentos')
+        .insert({
+          nome: `${experimento.nome} (Cópia)`,
+          tipo: experimento.tipo,
+          responsavel: experimento.responsavel,
+          status: 'planejado',
+          canais: experimento.canais,
+          hipotese: experimento.hipotese,
+          data_inicio: null,
+          data_fim: null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Duplicar métricas (apenas as esperadas, não as realizadas)
+      if (metricas.length > 0) {
+        const metricasEsperadas = metricas
+          .filter(m => m.tipo === 'esperada')
+          .map(metrica => ({
+            experimento_id: novoExperimento.id,
+            nome: metrica.nome,
+            valor: metrica.valor,
+            unidade: metrica.unidade,
+            tipo: 'esperada'
+          }));
+
+        if (metricasEsperadas.length > 0) {
+          await supabase
+            .from('metricas')
+            .insert(metricasEsperadas);
+        }
+      }
+
+      toast.success('Experimento duplicado com sucesso!');
+      navigate(`/experimentos/${novoExperimento.id}`);
+      
+    } catch (error) {
+      console.error('Erro ao duplicar experimento:', error);
+      toast.error('Erro ao duplicar experimento');
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
@@ -151,18 +206,34 @@ const ExperimentDetails = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Edit2 className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
-          <Button variant="outline" size="sm">
-            <Copy className="h-4 w-4 mr-2" />
-            Duplicar
-          </Button>
-          <Button variant="destructive" size="sm">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Excluir
-          </Button>
+          {hasRole('editor') && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/experimentos/${id}/editar`)}
+              >
+                <Edit2 className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDuplicate}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -639,7 +710,16 @@ const ExperimentDetails = () => {
                   <strong>João Silva</strong> atualizou o status para "Concluído"
                 </p>
                 <p className="text-xs text-muted-foreground">16 de julho, 2024 - 14:30</p>
-              </div>
+      {/* Modal de Exclusão */}
+      {experimento && (
+        <DeleteExperimentDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          experimentoId={experimento.id}
+          experimentoNome={experimento.nome}
+        />
+      )}
+    </div>
             </div>
             <div className="flex items-center gap-3 py-2">
               <div className="w-2 h-2 bg-secondary rounded-full"></div>

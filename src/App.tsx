@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const ExperimentsList = lazy(() => import("@/pages/ExperimentsList"));
 const ExperimentDetails = lazy(() => import("@/pages/ExperimentDetails"));
 const NewExperiment = lazy(() => import("@/pages/NewExperiment"));
+const EditExperiment = lazy(() => import("@/pages/EditExperiment"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const Reports = lazy(() => import("@/pages/Reports"));
 const Gallery = lazy(() => import("@/pages/Gallery"));
@@ -95,6 +96,16 @@ function App() {
                       <LazyWrapper>
                         <ExperimentDetails />
                       </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="experimentos/:id/editar"
+                    element={
+                      <ProtectedRoute requiredRole="editor">
+                        <LazyWrapper>
+                          <EditExperiment />
+                        </LazyWrapper>
+                      </ProtectedRoute>
                     }
                   />
                   <Route
