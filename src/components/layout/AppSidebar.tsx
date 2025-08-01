@@ -46,12 +46,12 @@ export function AppSidebar() {
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
-      ? "bg-accent text-accent-foreground font-medium shadow-sm" 
-      : "text-foreground hover:bg-muted/50 transition-colors";
+      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm" 
+      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
 
   return (
     <Sidebar
-      className={`${isCollapsed ? "w-14" : "w-64"} border-r border-border/40 bg-card/50 backdrop-blur-sm`}
+      className={`${isCollapsed ? "w-14" : "w-64"} border-r border-sidebar-border bg-sidebar-background`}
       collapsible="icon"
     >
       <SidebarContent className="px-3 py-4">
@@ -63,8 +63,8 @@ export function AppSidebar() {
                 <Beaker className="w-4 h-4 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-sm text-foreground">Laboratório</h1>
-                <p className="text-xs text-muted-foreground">Marketing Lab</p>
+                <h1 className="font-bold text-sm text-sidebar-foreground">Laboratório</h1>
+                <p className="text-xs text-sidebar-foreground/70">Marketing Lab</p>
               </div>
             </div>
           ) : (
