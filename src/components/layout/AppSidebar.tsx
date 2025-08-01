@@ -4,7 +4,10 @@ import {
   Home, 
   Plus, 
   Trophy,
-  FileText
+  FileText,
+  Settings,
+  Users,
+  LogOut
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -123,6 +126,25 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Admin Navigation */}
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+            Administração
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/admin/tipos-experimento" className={getNavCls}>
+                    <Settings className="w-4 h-4" />
+                    {!isCollapsed && <span>Tipos de Experimento</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
