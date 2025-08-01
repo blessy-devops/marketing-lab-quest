@@ -1,5 +1,5 @@
 import { useForm, useFieldArray } from "react-hook-form";
-import { ArrowLeft, Save, Play, Plus, X, CalendarIcon, Upload, Link2 } from "lucide-react";
+import { ArrowLeft, Save, Play, Plus, X, CalendarIcon, Upload, Link2, RadioIcon, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Form,
   FormControl,
@@ -24,9 +25,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface FormData {
+  tipoCadastro: 'futuro' | 'realizado';
   nome: string;
   tipo: string;
   responsavel?: string;
@@ -45,6 +47,13 @@ interface FormData {
     url: string;
     descricao?: string;
   }>;
+  // Campos de resultado para experimentos já realizados
+  sucesso?: boolean;
+  roi?: number;
+  fatos?: string;
+  causas?: string;
+  acoes?: string;
+  aprendizados?: string;
 }
 
 const canaisOptions = [
@@ -72,6 +81,7 @@ export default function NewExperiment() {
 
   const form = useForm<FormData>({
     defaultValues: {
+      tipoCadastro: 'futuro',
       nome: "",
       tipo: "",
       responsavel: "",
@@ -79,7 +89,13 @@ export default function NewExperiment() {
       canais: [],
       hipotese: "",
       metricas: [{ nome: "", valor: 0, unidade: "" }],
-      anexos: []
+      anexos: [],
+      sucesso: undefined,
+      roi: undefined,
+      fatos: "",
+      causas: "",
+      acoes: "",
+      aprendizados: ""
     }
   });
 
@@ -93,103 +109,136 @@ export default function NewExperiment() {
     name: "anexos"
   });
 
-  const onSubmit = async (data: FormData, shouldStart = false) => {
+  const tipoCadastro = form.watch('tipoCadastro');
+
+  // Ajustar status baseado no tipo de cadastro
+  useEffect(() => {
+    if (tipoCadastro === 'realizado') {
+      form.setValue('status', 'concluido');
+    } else {
+      form.setValue('status', 'planejado');
+    }
+  }, [tipoCadastro, form]);
+
+  const onSubmit = async (data: FormData) => {
+    // Validações
+    if (tipoCadastro === 'futuro') {
+      if (data.data_inicio && data.data_inicio < new Date()) {
+        toast.error('Data de início deve ser hoje ou futura para experimentos futuros');
+        return;
+      }
+    } else {
+      if (data.data_inicio && data.data_inicio >= new Date()) {
+        toast.error('Datas devem ser passadas para experimentos já realizados');
+        return;
+      }
+      if (data.data_fim && data.data_fim >= new Date()) {
+        toast.error('Datas devem ser passadas para experimentos já realizados');
+        return;
+      }
+      if (data.sucesso === undefined) {
+        toast.error('Informe se o experimento foi bem-sucedido');
+        return;
+      }
+    }
+
+    if (data.data_inicio && data.data_fim && data.data_fim < data.data_inicio) {
+      toast.error('Data de fim deve ser posterior à data de início');
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
-      // 1. Criar experimento
-      const { data: experimento, error: experimentoError } = await supabase
+      // Criar experimento
+      const { data: novoExperimento, error: experimentoError } = await supabase
         .from('experimentos')
         .insert({
           nome: data.nome,
           tipo: data.tipo,
           responsavel: data.responsavel,
+          status: data.status,
+          canais: data.canais,
+          hipotese: data.hipotese,
           data_inicio: data.data_inicio?.toISOString().split('T')[0],
           data_fim: data.data_fim?.toISOString().split('T')[0],
-          status: shouldStart ? 'ativo' : data.status,
-          canais: data.canais,
-          hipotese: data.hipotese
         })
         .select()
         .single();
 
       if (experimentoError) throw experimentoError;
 
-      // 2. Criar métricas
+      // Inserir métricas
       if (data.metricas.length > 0) {
-        const metricas = data.metricas.map(metrica => ({
-          experimento_id: experimento.id,
-          nome: metrica.nome,
-          valor: metrica.valor,
-          unidade: metrica.unidade,
-          tipo: 'esperada'
-        }));
+        const metricasData = data.metricas
+          .filter(metrica => metrica.nome.trim())
+          .map(metrica => ({
+            experimento_id: novoExperimento.id,
+            nome: metrica.nome,
+            valor: metrica.valor,
+            unidade: metrica.unidade,
+            tipo: tipoCadastro === 'realizado' ? 'realizada' : 'esperada'
+          }));
 
-        const { error: metricasError } = await supabase
-          .from('metricas')
-          .insert(metricas);
+        if (metricasData.length > 0) {
+          const { error: metricasError } = await supabase
+            .from('metricas')
+            .insert(metricasData);
 
-        if (metricasError) throw metricasError;
-      }
-
-      // 3. Criar anexos se houver
-      if (data.anexos && data.anexos.length > 0) {
-        const anexos = data.anexos.map(anexo => ({
-          experimento_id: experimento.id,
-          tipo: anexo.tipo,
-          url: anexo.url,
-          descricao: anexo.descricao
-        }));
-
-        const { error: anexosError } = await supabase
-          .from('anexos')
-          .insert(anexos);
-
-        if (anexosError) throw anexosError;
-      }
-
-      // Criar notificação se o experimento for iniciado
-      if (shouldStart) {
-        const { error: notificationError } = await supabase
-          .from('notificacoes')
-          .insert([{
-            tipo: 'experimento_concluido',
-            titulo: `Experimento "${experimento.nome}" foi iniciado`,
-            descricao: 'O experimento foi criado e iniciado com sucesso.',
-            experimento_id: experimento.id,
-          }]);
-        
-        if (notificationError) {
-          console.warn('Erro ao criar notificação:', notificationError);
+          if (metricasError) throw metricasError;
         }
       }
 
-      toast({
-        title: shouldStart ? "Experimento iniciado!" : "Experimento salvo!",
-        description: shouldStart 
-          ? "O experimento foi criado e iniciado com sucesso."
-          : "O experimento foi salvo como rascunho.",
-      });
+      // Se experimento já realizado, inserir resultados
+      if (tipoCadastro === 'realizado') {
+        const { error: resultadoError } = await supabase
+          .from('resultados')
+          .insert({
+            experimento_id: novoExperimento.id,
+            sucesso: data.sucesso,
+            roi: data.roi,
+            fatos: data.fatos,
+            causas: data.causas,
+            acoes: data.acoes,
+            aprendizados: data.aprendizados
+          });
 
-      navigate(`/experimentos/${experimento.id}`);
+        if (resultadoError) throw resultadoError;
+      }
+
+      // Inserir anexos se houver
+      if (data.anexos && data.anexos.length > 0) {
+        const anexosData = data.anexos
+          .filter(anexo => anexo.url.trim())
+          .map(anexo => ({
+            experimento_id: novoExperimento.id,
+            tipo: anexo.tipo,
+            url: anexo.url,
+            descricao: anexo.descricao
+          }));
+
+        if (anexosData.length > 0) {
+          const { error: anexosError } = await supabase
+            .from('anexos')
+            .insert(anexosData);
+
+          if (anexosError) throw anexosError;
+        }
+      }
+
+      toast.success('Experimento criado com sucesso!');
+      navigate(`/experimentos/${novoExperimento.id}`);
+      
     } catch (error) {
-      console.error('Erro ao salvar experimento:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao salvar o experimento. Tente novamente.",
-        variant: "destructive"
-      });
+      console.error('Erro ao criar experimento:', error);
+      toast.error('Erro ao criar experimento');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSave = () => {
-    form.handleSubmit((data) => onSubmit(data, false))();
-  };
-
-  const handleStart = () => {
-    form.handleSubmit((data) => onSubmit(data, true))();
+  const handleSubmit = () => {
+    form.handleSubmit(onSubmit)();
   };
 
   return (
@@ -208,19 +257,60 @@ export default function NewExperiment() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSave} disabled={isSubmitting}>
+          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
             <Save className="w-4 h-4 mr-2" />
-            Salvar Rascunho
-          </Button>
-          <Button onClick={handleStart} disabled={isSubmitting}>
-            <Play className="w-4 h-4 mr-2" />
-            Iniciar Experimento
+            {tipoCadastro === 'realizado' ? 'Salvar Experimento' : 'Criar Experimento'}
           </Button>
         </div>
       </div>
 
       <Form {...form}>
         <form className="space-y-6">
+          {/* Tipo de Cadastro */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tipo de Cadastro</CardTitle>
+              <CardDescription>
+                Escolha se está criando um experimento futuro ou documentando um já realizado
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="tipoCadastro"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-2"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="futuro" id="futuro" />
+                          <Label htmlFor="futuro" className="font-normal">
+                            Experimento futuro (padrão)
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="realizado" id="realizado" />
+                          <Label htmlFor="realizado" className="font-normal">
+                            Experimento já realizado
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    {tipoCadastro === 'realizado' && (
+                      <FormDescription className="text-sm text-muted-foreground">
+                        Use esta opção para documentar experimentos anteriores
+                      </FormDescription>
+                    )}
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
           <div className="grid gap-6 md:grid-cols-2">
             {/* Informações Básicas */}
             <Card className="md:col-span-2">
@@ -317,7 +407,11 @@ export default function NewExperiment() {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={(date) => date < new Date()}
+                              disabled={(date) => 
+                                tipoCadastro === 'futuro' 
+                                  ? date < new Date()
+                                  : date >= new Date()
+                              }
                               initialFocus
                               className="p-3 pointer-events-auto"
                             />
@@ -358,7 +452,11 @@ export default function NewExperiment() {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={(date) => date < new Date()}
+                              disabled={(date) => 
+                                tipoCadastro === 'futuro' 
+                                  ? date < new Date()
+                                  : date >= new Date()
+                              }
                               initialFocus
                               className="p-3 pointer-events-auto"
                             />
@@ -460,10 +558,15 @@ export default function NewExperiment() {
           {/* Métricas Esperadas */}
           <Card>
             <CardHeader>
-              <CardTitle>Métricas Esperadas *</CardTitle>
-              <CardDescription>
-                Defina as métricas que serão acompanhadas no experimento
-              </CardDescription>
+            <CardTitle>
+              {tipoCadastro === 'realizado' ? 'Métricas Realizadas *' : 'Métricas Esperadas *'}
+            </CardTitle>
+            <CardDescription>
+              {tipoCadastro === 'realizado' 
+                ? 'Informe os resultados obtidos no experimento'
+                : 'Defina as métricas que serão acompanhadas no experimento'
+              }
+            </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {metricasFields.map((field, index) => (
@@ -489,7 +592,9 @@ export default function NewExperiment() {
                       name={`metricas.${index}.valor`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Valor Esperado</FormLabel>
+                          <FormLabel>
+                            {tipoCadastro === 'realizado' ? 'Valor Realizado' : 'Valor Esperado'}
+                          </FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
@@ -542,6 +647,153 @@ export default function NewExperiment() {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Resultados - apenas para experimentos já realizados */}
+          {tipoCadastro === 'realizado' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Resultados do Experimento</CardTitle>
+                <CardDescription>
+                  Informe os resultados e aprendizados obtidos
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="sucesso"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>O experimento foi bem-sucedido? *</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => field.onChange(value === 'true')}
+                            value={field.value?.toString()}
+                            className="flex flex-row space-x-6"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="true" id="sucesso-sim" />
+                              <Label htmlFor="sucesso-sim" className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                Sim
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="false" id="sucesso-nao" />
+                              <Label htmlFor="sucesso-nao" className="flex items-center gap-2">
+                                <XCircle className="h-4 w-4 text-red-600" />
+                                Não
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="roi"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ROI (Retorno sobre Investimento)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="1.5"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Valor em múltiplos (ex: 1.5 = 150% de retorno)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="fatos"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fatos</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="O que aconteceu de fato..."
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="causas"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Causas</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Por que aconteceu..."
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="acoes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ações</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="O que deve ser feito..."
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="aprendizados"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Aprendizados</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="O que aprendemos..."
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Anexos */}
           <Card>
