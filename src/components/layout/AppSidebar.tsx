@@ -59,18 +59,22 @@ export function AppSidebar() {
         <div className="mb-6 px-2">
           {!isCollapsed ? (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg flex items-center justify-center">
-                <Beaker className="w-4 h-4 text-primary-foreground" />
-              </div>
+              <img 
+                src="/src/assets/blessy-logo.png" 
+                alt="Blessy" 
+                className="w-8 h-8 rounded-lg"
+              />
               <div>
-                <h1 className="font-bold text-sm text-sidebar-foreground">Laboratório</h1>
+                <h1 className="font-bold text-sm text-sidebar-foreground">Blessy</h1>
                 <p className="text-xs text-sidebar-foreground/70">Marketing Lab</p>
               </div>
             </div>
           ) : (
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg flex items-center justify-center mx-auto">
-              <Beaker className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img 
+              src="/src/assets/blessy-logo.png" 
+              alt="Blessy" 
+              className="w-8 h-8 rounded-lg mx-auto"
+            />
           )}
         </div>
 

@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { CANAIS_OPTIONS, getChannelsByCategory } from "@/constants/canais";
 import { useExperimentosComResultados } from "@/hooks/useSupabaseData";
 
 interface FormData {
@@ -51,14 +52,6 @@ const statusOptions = [
   { value: "cancelado", label: "Cancelado" }
 ];
 
-const canaisDisponiveis = [
-  { value: "site", label: "Site" },
-  { value: "app", label: "App Mobile" },
-  { value: "social-media", label: "Redes Sociais" },
-  { value: "email", label: "E-mail Marketing" },
-  { value: "ads", label: "Anúncios Pagos" },
-  { value: "landing-page", label: "Landing Page" }
-];
 
 export default function EditExperiment() {
   const { id } = useParams();
@@ -405,14 +398,24 @@ export default function EditExperiment() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {canaisDisponiveis.map((canal) => (
-                  <div key={canal.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={canal.value}
-                      checked={form.watch("canais").includes(canal.value)}
-                      onCheckedChange={() => toggleCanal(canal.value)}
-                    />
-                    <Label htmlFor={canal.value}>{canal.label}</Label>
+                {Object.entries(getChannelsByCategory()).map(([categoria, canais]) => (
+                  <div key={categoria} className="space-y-2">
+                    <h4 className="font-medium text-sm text-muted-foreground">{categoria}</h4>
+                    <div className="space-y-2 pl-2">
+                      {canais.map((canal) => (
+                        <div key={canal.value} className="flex items-center space-x-2">
+                          <canal.icon className="w-4 h-4 text-muted-foreground" />
+                          <Checkbox
+                            id={canal.value}
+                            checked={form.watch("canais").includes(canal.value)}
+                            onCheckedChange={() => toggleCanal(canal.value)}
+                          />
+                          <Label htmlFor={canal.value} className="text-sm font-normal cursor-pointer">
+                            {canal.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
                 {form.formState.errors.canais && (

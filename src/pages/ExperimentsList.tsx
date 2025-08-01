@@ -8,11 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { ArrowUpDown, Calendar, Eye, MoreHorizontal, Plus, Search, Edit2, Trash2, Filter, Grid, List, X } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useExperimentos } from '@/hooks/useSupabaseData';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { CANAIS, CANAIS_OPTIONS, getChannelsByCategory, getChannelIcon } from "@/constants/canais";
 
 interface ExperimentoExtended {
   id: string;
@@ -57,15 +59,6 @@ const getTypeColor = (type?: string) => {
   }
 };
 
-const CHANNELS = [
-  'Meta Ads',
-  'Google Ads', 
-  'TikTok Shop',
-  'Mercado Livre',
-  'Site',
-  'Email',
-  'WhatsApp'
-];
 
 const TYPES = [
   'A/B Test',
@@ -158,11 +151,11 @@ export default function ExperimentsList() {
     setCurrentPage(1);
   };
 
-  const handleChannelChange = (channel: string, checked: boolean) => {
-    if (checked) {
-      setSelectedChannels([...selectedChannels, channel]);
-    } else {
+  const handleChannelChange = (channel: string) => {
+    if (selectedChannels.includes(channel)) {
       setSelectedChannels(selectedChannels.filter(c => c !== channel));
+    } else {
+      setSelectedChannels([...selectedChannels, channel]);
     }
   };
 
@@ -279,19 +272,24 @@ export default function ExperimentsList() {
             <div>
               <label className="text-sm font-medium mb-2 block">Canal</label>
               <div className="space-y-2">
-                {CHANNELS.map((channel) => (
-                  <div key={channel} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`channel-${channel}`}
-                      checked={selectedChannels.includes(channel)}
-                      onCheckedChange={(checked) => handleChannelChange(channel, checked as boolean)}
-                    />
-                    <label
-                      htmlFor={`channel-${channel}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {channel}
-                    </label>
+                {Object.entries(getChannelsByCategory()).map(([categoria, canais]) => (
+                  <div key={categoria} className="space-y-2">
+                    <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">{categoria}</h4>
+                    <div className="space-y-1 pl-2">
+                      {canais.map((canal) => (
+                        <div key={canal.value} className="flex items-center space-x-2">
+                          <canal.icon className="w-3 h-3 text-muted-foreground" />
+                          <Checkbox
+                            id={canal.value}
+                            checked={selectedChannels.includes(canal.value)}
+                            onCheckedChange={() => handleChannelChange(canal.value)}
+                          />
+                          <Label htmlFor={canal.value} className="text-xs font-normal cursor-pointer">
+                            {canal.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -495,7 +493,8 @@ export default function ExperimentsList() {
                       {exp.canais && exp.canais.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {exp.canais.slice(0, 3).map((canal, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
+                            <Badge key={index} variant="outline" className="text-xs flex items-center gap-1">
+                              {getChannelIcon(canal)}
                               {canal}
                             </Badge>
                           ))}

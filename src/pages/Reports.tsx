@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getChannelsByCategory } from "@/constants/canais";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -284,10 +285,21 @@ export default function Reports() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os canais</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="social">Social Media</SelectItem>
-                <SelectItem value="web">Website</SelectItem>
-                <SelectItem value="mobile">Mobile</SelectItem>
+                {Object.entries(getChannelsByCategory()).map(([categoria, canais]) => (
+                  <div key={categoria}>
+                    <div className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {categoria}
+                    </div>
+                    {canais.map((canal) => (
+                      <SelectItem key={canal.value} value={canal.value} className="pl-4">
+                        <div className="flex items-center gap-2">
+                          <canal.icon className="w-3 h-3" />
+                          {canal.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </div>
+                ))}
               </SelectContent>
             </Select>
 
