@@ -79,6 +79,13 @@ export type Database = {
             referencedRelation: "tipos_experimento"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "canal_tipo_sugestao_tipo_id_fkey"
+            columns: ["tipo_id"]
+            isOneToOne: false
+            referencedRelation: "v_tipos_experimento_completo"
+            referencedColumns: ["id"]
+          },
         ]
       }
       comentarios: {
@@ -170,6 +177,13 @@ export type Database = {
             columns: ["tipo_experimento_id"]
             isOneToOne: false
             referencedRelation: "tipos_experimento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experimentos_tipo_experimento_id_fkey"
+            columns: ["tipo_experimento_id"]
+            isOneToOne: false
+            referencedRelation: "v_tipos_experimento_completo"
             referencedColumns: ["id"]
           },
         ]
@@ -375,6 +389,13 @@ export type Database = {
             referencedRelation: "tipos_experimento"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "subtipos_experimento_tipo_id_fkey"
+            columns: ["tipo_id"]
+            isOneToOne: false
+            referencedRelation: "v_tipos_experimento_completo"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tipos_experimento: {
@@ -439,7 +460,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_tipos_experimento_completo: {
+        Row: {
+          ativo: boolean | null
+          codigo: string | null
+          cor: string | null
+          descricao: string | null
+          icone: string | null
+          id: string | null
+          nome: string | null
+          ordem: number | null
+          total_experimentos: number | null
+          total_subtipos: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_current_user_role: {
