@@ -1,358 +1,614 @@
-import { BarChart3, Download, Filter, Calendar, TrendingUp, Users, Target, DollarSign } from "lucide-react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  BarChart, 
+  LineChart, 
+  PieChart, 
+  ResponsiveContainer, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  Bar, 
+  Line, 
+  Pie, 
+  Cell
+} from "recharts";
+import { 
+  Calendar as CalendarIcon,
+  BarChart3, 
+  TrendingUp, 
+  Download, 
+  Share, 
+  Mail, 
+  Filter,
+  FileText,
+  Table as TableIcon,
+  PieChart as PieChartIcon,
+  Bot,
+  AlertTriangle,
+  Lightbulb,
+  Target
+} from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { useExperimentosComResultados } from "@/hooks/useSupabaseData";
+import { toast } from "sonner";
+
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
 export default function Reports() {
-  const monthlyData = [
-    { month: "Jan", experiments: 8, conversions: 156, roi: 45000 },
-    { month: "Fev", experiments: 12, conversions: 203, roi: 67000 },
-    { month: "Mar", experiments: 10, conversions: 178, roi: 52000 },
-    { month: "Abr", experiments: 15, conversions: 267, roi: 89000 },
-    { month: "Mai", experiments: 13, conversions: 234, roi: 76000 },
-    { month: "Jun", experiments: 18, conversions: 312, roi: 124000 }
-  ];
+  const { data: experimentos, loading } = useExperimentosComResultados();
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [selectedReport, setSelectedReport] = useState("performance");
+  const [filterType, setFilterType] = useState("todos");
+  const [filterChannel, setFilterChannel] = useState("todos");
+  const [filterStatus, setFilterStatus] = useState("todos");
+  const [filterResponsible, setFilterResponsible] = useState("todos");
 
-  const topExperiments = [
-    {
-      name: "Redesign do Checkout",
-      category: "UX/UI",
-      improvement: 34,
-      roi: 284000,
-      participants: 12500
-    },
-    {
-      name: "Nova Landing Page",
-      category: "Landing Page", 
-      improvement: 48,
-      roi: 156000,
-      participants: 8200
-    },
-    {
-      name: "Email Subject Lines",
-      category: "Email Marketing",
-      improvement: 67,
-      roi: 89000,
-      participants: 25300
-    },
-    {
-      name: "Pricing Page Redesign",
-      category: "Pricing",
-      improvement: 23,
-      roi: 412000,
-      participants: 6800
+  // Processar dados para gráficos
+  const processedData = useMemo(() => {
+    if (!experimentos) return null;
+
+    let filteredData = experimentos;
+
+    // Aplicar filtros
+    if (filterType !== "todos") {
+      filteredData = filteredData.filter(exp => exp.tipo === filterType);
     }
-  ];
+    if (filterStatus !== "todos") {
+      filteredData = filteredData.filter(exp => exp.status === filterStatus);
+    }
+    if (filterChannel !== "todos") {
+      filteredData = filteredData.filter(exp => 
+        exp.canais?.some(canal => canal.toLowerCase().includes(filterChannel.toLowerCase()))
+      );
+    }
+    if (filterResponsible !== "todos") {
+      filteredData = filteredData.filter(exp => exp.responsavel === filterResponsible);
+    }
+    if (dateRange.from && dateRange.to) {
+      filteredData = filteredData.filter(exp => {
+        const expDate = new Date(exp.created_at);
+        return expDate >= dateRange.from! && expDate <= dateRange.to!;
+      });
+    }
 
-  const categories = [
-    { name: "UX/UI", experiments: 12, avgImprovement: 28, color: "bg-purple-500" },
-    { name: "Landing Page", experiments: 8, avgImprovement: 35, color: "bg-green-500" },
-    { name: "Email Marketing", experiments: 15, avgImprovement: 42, color: "bg-blue-500" },
-    { name: "Pricing", experiments: 6, avgImprovement: 19, color: "bg-yellow-500" },
-    { name: "A/B Test", experiments: 23, avgImprovement: 24, color: "bg-pink-500" }
-  ];
+    // Performance por período
+    const performanceByPeriod = filteredData.reduce((acc, exp) => {
+      const month = format(new Date(exp.created_at), 'MMM yyyy', { locale: ptBR });
+      if (!acc[month]) {
+        acc[month] = { 
+          periodo: month, 
+          experimentos: 0, 
+          sucessos: 0, 
+          roi: 0,
+          taxa_sucesso: 0
+        };
+      }
+      acc[month].experimentos++;
+      if (exp.resultado?.sucesso) {
+        acc[month].sucessos++;
+        acc[month].roi += exp.resultado.roi || 0;
+      }
+      acc[month].taxa_sucesso = (acc[month].sucessos / acc[month].experimentos) * 100;
+      return acc;
+    }, {} as Record<string, any>);
+
+    // ROI por canal
+    const roiByChannel = filteredData.reduce((acc, exp) => {
+      exp.canais?.forEach(canal => {
+        if (!acc[canal]) {
+          acc[canal] = { canal, roi: 0, experimentos: 0 };
+        }
+        acc[canal].experimentos++;
+        if (exp.resultado?.roi) {
+          acc[canal].roi += exp.resultado.roi;
+        }
+      });
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Análise por tipo
+    const analysisByType = filteredData.reduce((acc, exp) => {
+      const tipo = exp.tipo || 'outros';
+      if (!acc[tipo]) {
+        acc[tipo] = { 
+          tipo, 
+          total: 0, 
+          sucessos: 0, 
+          roi_medio: 0,
+          taxa_sucesso: 0
+        };
+      }
+      acc[tipo].total++;
+      if (exp.resultado?.sucesso) {
+        acc[tipo].sucessos++;
+        acc[tipo].roi_medio += exp.resultado.roi || 0;
+      }
+      acc[tipo].taxa_sucesso = (acc[tipo].sucessos / acc[tipo].total) * 100;
+      acc[tipo].roi_medio = acc[tipo].roi_medio / acc[tipo].sucessos || 0;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return {
+      performanceByPeriod: Object.values(performanceByPeriod),
+      roiByChannel: Object.values(roiByChannel),
+      analysisByType: Object.values(analysisByType),
+      totalExperiments: filteredData.length,
+      successRate: (filteredData.filter(exp => exp.resultado?.sucesso).length / filteredData.length) * 100,
+      totalROI: filteredData.reduce((acc, exp) => acc + (exp.resultado?.roi || 0), 0),
+      avgROI: filteredData.length > 0 ? filteredData.reduce((acc, exp) => acc + (exp.resultado?.roi || 0), 0) / filteredData.length : 0
+    };
+  }, [experimentos, filterType, filterChannel, filterStatus, filterResponsible, dateRange]);
+
+  const handleExportPDF = () => {
+    toast("Exportando relatório em PDF...");
+    // Implementar exportação PDF
+  };
+
+  const handleExportExcel = () => {
+    toast("Exportando relatório em Excel...");
+    // Implementar exportação Excel
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast("Link do relatório copiado!");
+  };
+
+  const handleScheduleEmail = () => {
+    toast("Agendamento de email em desenvolvimento...");
+    // Implementar agendamento de email
+  };
+
+  if (loading || !processedData) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-20 w-full" />
+        <div className="grid gap-4 md:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
           <p className="text-muted-foreground">
-            Análise completa do desempenho dos seus experimentos
+            Análises detalhadas dos seus experimentos e resultados
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros
-          </Button>
-          <Button className="bg-gradient-to-r from-primary to-primary-glow">
+          <Button variant="outline" onClick={handleExportPDF}>
             <Download className="w-4 h-4 mr-2" />
-            Exportar Relatório
+            PDF
+          </Button>
+          <Button variant="outline" onClick={handleExportExcel}>
+            <Download className="w-4 h-4 mr-2" />
+            Excel
+          </Button>
+          <Button variant="outline" onClick={handleShare}>
+            <Share className="w-4 h-4 mr-2" />
+            Compartilhar
+          </Button>
+          <Button variant="outline" onClick={handleScheduleEmail}>
+            <Mail className="w-4 h-4 mr-2" />
+            Agendar Email
           </Button>
         </div>
       </div>
 
-      {/* Period Selector */}
+      {/* Filtros */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Período de Análise</CardTitle>
-              <CardDescription>
-                Selecione o período para análise dos dados
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Select defaultValue="6months">
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1month">Último mês</SelectItem>
-                  <SelectItem value="3months">Últimos 3 meses</SelectItem>
-                  <SelectItem value="6months">Últimos 6 meses</SelectItem>
-                  <SelectItem value="1year">Último ano</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="w-4 h-4" />
+            Filtros Personalizáveis
+          </CardTitle>
         </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-6">
+            <div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateRange.from && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "dd/MM/yy")} -{" "}
+                          {format(dateRange.to, "dd/MM/yy")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "dd/MM/yyyy")
+                      )
+                    ) : (
+                      "Período"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange.from}
+                    selected={{ from: dateRange.from, to: dateRange.to }}
+                    onSelect={(range) => setDateRange(range || {})}
+                    numberOfMonths={2}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os tipos</SelectItem>
+                <SelectItem value="criativo">Criativo</SelectItem>
+                <SelectItem value="campanha">Campanha</SelectItem>
+                <SelectItem value="oferta">Oferta</SelectItem>
+                <SelectItem value="produto">Produto</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterChannel} onValueChange={setFilterChannel}>
+              <SelectTrigger>
+                <SelectValue placeholder="Canal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os canais</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="social">Social Media</SelectItem>
+                <SelectItem value="web">Website</SelectItem>
+                <SelectItem value="mobile">Mobile</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os status</SelectItem>
+                <SelectItem value="planejado">Planejado</SelectItem>
+                <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                <SelectItem value="concluido">Concluído</SelectItem>
+                <SelectItem value="pausado">Pausado</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterResponsible} onValueChange={setFilterResponsible}>
+              <SelectTrigger>
+                <SelectValue placeholder="Responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {/* Lista dinâmica de responsáveis */}
+                {Array.from(new Set(experimentos?.map(exp => exp.responsavel).filter(Boolean))).map(responsavel => (
+                  <SelectItem key={responsavel} value={responsavel!}>
+                    {responsavel}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedReport} onValueChange={setSelectedReport}>
+              <SelectTrigger>
+                <SelectValue placeholder="Relatório" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="performance">Performance por Período</SelectItem>
+                <SelectItem value="tipo">Análise por Tipo</SelectItem>
+                <SelectItem value="canal">ROI por Canal</SelectItem>
+                <SelectItem value="aprendizados">Evolução de Aprendizados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      {/* Cards de Insights Principais */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Total de Experimentos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{processedData.totalExperiments}</div>
+            <p className="text-xs text-muted-foreground">no período selecionado</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              Taxa de Sucesso
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{processedData.successRate.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">experimentos bem-sucedidos</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              ROI Total
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{processedData.totalROI.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">retorno acumulado</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              ROI Médio
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{processedData.avgROI.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">por experimento</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Visualizações */}
+      <Tabs value={selectedReport} onValueChange={setSelectedReport} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
-          <TabsTrigger value="trends">Tendências</TabsTrigger>
+          <TabsTrigger value="performance" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Performance
+          </TabsTrigger>
+          <TabsTrigger value="tipo" className="flex items-center gap-2">
+            <PieChartIcon className="w-4 h-4" />
+            Por Tipo
+          </TabsTrigger>
+          <TabsTrigger value="canal" className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
+            Por Canal
+          </TabsTrigger>
+          <TabsTrigger value="aprendizados" className="flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Aprendizados
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          {/* KPI Cards */}
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  Total de Experimentos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">76</div>
-                <p className="text-xs text-muted-foreground">+12 vs período anterior</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Taxa de Sucesso
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">73%</div>
-                <p className="text-xs text-muted-foreground">+5% vs período anterior</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Usuários Impactados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">284K</div>
-                <p className="text-xs text-muted-foreground">+18% vs período anterior</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  ROI Total
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">R$ 1.2M</div>
-                <p className="text-xs text-muted-foreground">+34% vs período anterior</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Monthly Trends */}
+        <TabsContent value="performance" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Evolução Mensal</CardTitle>
+              <CardTitle>Performance por Período</CardTitle>
               <CardDescription>
-                Acompanhe o crescimento dos experimentos ao longo do tempo
+                Evolução dos experimentos e taxa de sucesso ao longo do tempo
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {monthlyData.map((data, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 rounded-lg border bg-card/50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 text-center">
-                        <div className="font-medium">{data.month}</div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-8 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Experimentos</p>
-                          <p className="font-medium">{data.experiments}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Conversões</p>
-                          <p className="font-medium">{data.conversions}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">ROI</p>
-                          <p className="font-medium">R$ {(data.roi / 1000).toFixed(0)}K</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-muted rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full"
-                          style={{ width: `${(data.experiments / 20) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={processedData.performanceByPeriod}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="periodo" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="experimentos" fill="#8884d8" name="Experimentos" />
+                  <Line yAxisId="right" type="monotone" dataKey="taxa_sucesso" stroke="#82ca9d" name="Taxa Sucesso (%)" />
+                </LineChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="performance" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Experimentos por Performance</CardTitle>
-              <CardDescription>
-                Os experimentos com melhor retorno sobre investimento
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {topExperiments.map((experiment, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 rounded-lg border bg-card/50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">#{index + 1}</span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{experiment.name}</h4>
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {experiment.category}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-6 text-sm text-right">
-                      <div>
-                        <p className="text-muted-foreground">Melhoria</p>
-                        <p className="font-medium text-green-600">+{experiment.improvement}%</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">ROI</p>
-                        <p className="font-medium">R$ {(experiment.roi / 1000).toFixed(0)}K</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Participantes</p>
-                        <p className="font-medium">{(experiment.participants / 1000).toFixed(1)}K</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="categories" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance por Categoria</CardTitle>
-              <CardDescription>
-                Compare o desempenho entre diferentes tipos de experimento
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {categories.map((category, index) => (
-                  <div key={index} className="p-4 rounded-lg border bg-card/50">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
-                      <h4 className="font-medium">{category.name}</h4>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Experimentos:</span>
-                        <span className="font-medium">{category.experiments}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Melhoria Média:</span>
-                        <span className="font-medium text-green-600">+{category.avgImprovement}%</span>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${category.color}`}
-                          style={{ width: `${(category.avgImprovement / 50) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="trends" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
+        <TabsContent value="tipo" className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Tendências de Crescimento</CardTitle>
-                <CardDescription>
-                  Análise das tendências ao longo do tempo
-                </CardDescription>
+                <CardTitle>Distribuição por Tipo</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Volume de Experimentos</span>
-                    <span className="text-sm font-medium text-green-600">+25% trimestre</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Taxa de Conversão Média</span>
-                    <span className="text-sm font-medium text-green-600">+12% trimestre</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">ROI por Experimento</span>
-                    <span className="text-sm font-medium text-green-600">+18% trimestre</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Tempo Médio de Teste</span>
-                    <span className="text-sm font-medium text-blue-600">-8% trimestre</span>
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={processedData.analysisByType}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(entry) => `${entry.tipo}: ${entry.total}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="total"
+                    >
+                      {processedData.analysisByType.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Previsões</CardTitle>
-                <CardDescription>
-                  Projeções baseadas em tendências atuais
-                </CardDescription>
+                <CardTitle>Taxa de Sucesso por Tipo</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                    <p className="text-sm font-medium text-primary">Próximo Trimestre</p>
-                    <p className="text-xs text-muted-foreground">Expectativa de +30% em experimentos</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800">
-                    <p className="text-sm font-medium text-green-700 dark:text-green-300">ROI Projetado</p>
-                    <p className="text-xs text-green-600 dark:text-green-400">R$ 1.8M baseado na tendência atual</p>
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={processedData.analysisByType}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="tipo" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="taxa_sucesso" fill="#82ca9d" name="Taxa de Sucesso (%)" />
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="canal" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>ROI por Canal</CardTitle>
+              <CardDescription>
+                Comparativo de retorno sobre investimento por canal de distribuição
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={processedData.roiByChannel}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="canal" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="roi" fill="#ffc658" name="ROI Total (%)" />
+                  <Bar dataKey="experimentos" fill="#8884d8" name="Nº Experimentos" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="aprendizados" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Evolução de Aprendizados</CardTitle>
+              <CardDescription>
+                Principais insights e padrões identificados ao longo do tempo
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">Melhor Canal</h4>
+                    <p className="text-2xl font-bold text-green-600">Email</p>
+                    <p className="text-sm text-muted-foreground">ROI médio: 285%</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">Tipo Mais Eficaz</h4>
+                    <p className="text-2xl font-bold text-blue-600">Campanha</p>
+                    <p className="text-sm text-muted-foreground">Taxa sucesso: 78%</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">Duração Ideal</h4>
+                    <p className="text-2xl font-bold text-purple-600">21 dias</p>
+                    <p className="text-sm text-muted-foreground">Melhor performance</p>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">Principais Aprendizados</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li>• Experimentos de email marketing têm 40% mais chances de sucesso</li>
+                    <li>• Campanhas com duração de 14-28 dias apresentam melhor ROI</li>
+                    <li>• Testes de oferta convertem 25% melhor que testes de criativo</li>
+                    <li>• Experimentos com hipóteses claras têm taxa de sucesso 60% maior</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Seção de Insights AI */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="w-4 h-4" />
+            Insights AI
+          </CardTitle>
+          <CardDescription>
+            Análises inteligentes baseadas nos seus dados
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="p-4 border rounded-lg border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+              <div className="flex items-start gap-3">
+                <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100">Padrão Identificado</h4>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    Experimentos iniciados às terças-feiras têm 23% mais chance de sucesso
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border rounded-lg border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+              <div className="flex items-start gap-3">
+                <Target className="w-5 h-5 text-green-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-green-900 dark:text-green-100">Recomendação</h4>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                    Foque em experimentos de email marketing para o próximo trimestre
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border rounded-lg border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-orange-900 dark:text-orange-100">Oportunidade</h4>
+                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                    Canal mobile está subutilizado - apenas 12% dos experimentos
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+            <h4 className="font-medium mb-2">💡 Sugestão de Próximo Experimento</h4>
+            <p className="text-sm text-muted-foreground">
+              Com base nos seus dados, recomendamos testar uma campanha de email marketing 
+              focada em mobile, com duração de 21 dias, iniciando em uma terça-feira.
+              Probabilidade de sucesso estimada: <strong>78%</strong>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
