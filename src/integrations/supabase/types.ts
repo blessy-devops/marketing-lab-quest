@@ -119,7 +119,10 @@ export type Database = {
           nome: string
           responsavel: string | null
           status: string | null
+          subtipo_customizado: string | null
+          subtipo_experimento_id: string | null
           tipo: string | null
+          tipo_experimento_id: string | null
           updated_at: string
         }
         Insert: {
@@ -132,7 +135,10 @@ export type Database = {
           nome: string
           responsavel?: string | null
           status?: string | null
+          subtipo_customizado?: string | null
+          subtipo_experimento_id?: string | null
           tipo?: string | null
+          tipo_experimento_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -145,10 +151,28 @@ export type Database = {
           nome?: string
           responsavel?: string | null
           status?: string | null
+          subtipo_customizado?: string | null
+          subtipo_experimento_id?: string | null
           tipo?: string | null
+          tipo_experimento_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "experimentos_subtipo_experimento_id_fkey"
+            columns: ["subtipo_experimento_id"]
+            isOneToOne: false
+            referencedRelation: "subtipos_experimento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experimentos_tipo_experimento_id_fkey"
+            columns: ["tipo_experimento_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_experimento"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       metricas: {
         Row: {
