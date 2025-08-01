@@ -1,6 +1,4 @@
 import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { ArrowLeft, Save, Play, Plus, X, CalendarIcon, Upload, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,28 +26,26 @@ import {
 } from "@/components/ui/form";
 import { useState } from "react";
 
-const formSchema = z.object({
-  nome: z.string().min(1, "Nome é obrigatório"),
-  tipo: z.string().min(1, "Tipo é obrigatório"),
-  responsavel: z.string().optional(),
-  data_inicio: z.date().optional(),
-  data_fim: z.date().optional(),
-  status: z.string().default("planejado"),
-  canais: z.array(z.string()).min(1, "Selecione pelo menos um canal"),
-  hipotese: z.string().min(1, "Hipótese é obrigatória"),
-  metricas: z.array(z.object({
-    nome: z.string().min(1, "Nome da métrica é obrigatório"),
-    valor: z.number().min(0, "Valor deve ser positivo"),
-    unidade: z.string().optional()
-  })).min(1, "Adicione pelo menos uma métrica"),
-  anexos: z.array(z.object({
-    tipo: z.string(),
-    url: z.string(),
-    descricao: z.string().optional()
-  })).optional()
-});
-
-type FormData = z.infer<typeof formSchema>;
+interface FormData {
+  nome: string;
+  tipo: string;
+  responsavel?: string;
+  data_inicio?: Date;
+  data_fim?: Date;
+  status: string;
+  canais: string[];
+  hipotese: string;
+  metricas: Array<{
+    nome: string;
+    valor: number;
+    unidade?: string;
+  }>;
+  anexos?: Array<{
+    tipo: string;
+    url: string;
+    descricao?: string;
+  }>;
+}
 
 const canaisOptions = [
   "Meta Ads",
@@ -75,7 +71,6 @@ export default function NewExperiment() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       nome: "",
       tipo: "",

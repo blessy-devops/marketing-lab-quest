@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Eye, EyeOff, UserPlus, Mail, User, Building, Briefcase } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,23 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { AnimatedWrapper } from "@/components/ui/animated-wrapper";
 
-const signupSchema = z.object({
-  nome_completo: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  password: z.string()
-    .min(8, "Senha deve ter pelo menos 8 caracteres")
-    .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
-    .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
-    .regex(/[0-9]/, "Senha deve conter pelo menos um número"),
-  confirmPassword: z.string(),
-  departamento: z.enum(["Marketing", "Comercial", "Produto", "Tech"]).optional(),
-  cargo: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Senhas não coincidem",
-  path: ["confirmPassword"],
-});
-
-type SignupData = z.infer<typeof signupSchema>;
+interface SignupData {
+  nome_completo: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  departamento?: 'Marketing' | 'Comercial' | 'Produto' | 'Tech';
+  cargo?: string;
+}
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -43,9 +32,7 @@ const Signup = () => {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<SignupData>({
-    resolver: zodResolver(signupSchema),
-  });
+  } = useForm<SignupData>();
 
   const onSubmit = async (data: SignupData) => {
     setIsLoading(true);

@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { ArrowLeft, Mail, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,11 +10,9 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { AnimatedWrapper } from "@/components/ui/animated-wrapper";
 
-const forgotPasswordSchema = z.object({
-  email: z.string().email("Email inválido"),
-});
-
-type ForgotPasswordData = z.infer<typeof forgotPasswordSchema>;
+interface ForgotPasswordData {
+  email: string;
+}
 
 const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,9 +23,7 @@ const ForgotPassword = () => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ForgotPasswordData>({
-    resolver: zodResolver(forgotPasswordSchema),
-  });
+  } = useForm<ForgotPasswordData>();
 
   const onSubmit = async (data: ForgotPasswordData) => {
     setIsLoading(true);
