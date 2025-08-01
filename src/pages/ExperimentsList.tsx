@@ -260,12 +260,12 @@ export default function ExperimentsList() {
             {/* Status Filter */}
             <div>
               <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value === "todos" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="todos">Todos</SelectItem>
                   {STATUS_OPTIONS.map((status) => (
                     <SelectItem key={status.value} value={status.value}>
                       {status.label}
