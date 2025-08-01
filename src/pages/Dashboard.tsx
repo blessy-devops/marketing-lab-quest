@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+// import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboardMetrics, useExperimentosComResultados } from "@/hooks/useSupabaseData";
 import { Link } from "react-router-dom";
 import { format, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
@@ -223,7 +223,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Gráfico de evolução */}
+        {/* Evolução mensal simplificada */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -238,22 +238,29 @@ export default function Dashboard() {
             {dataLoading ? (
               <Skeleton className="h-64 w-full" />
             ) : (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="experimentos" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="space-y-4">
+                {chartData.map((item, index) => (
+                  <div key={index} className="flex items-center gap-4">
+                    <div className="w-12 text-sm font-medium text-center">
+                      {item.month}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-muted rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            style={{ 
+                              width: `${Math.max(10, (item.experimentos / Math.max(...chartData.map(d => d.experimentos))) * 100)}%` 
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium min-w-[2rem]">
+                          {item.experimentos}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
