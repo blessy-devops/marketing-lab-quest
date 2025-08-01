@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
-import { CANAIS } from '@/constants/canais';
+import { CANAIS_OPTIONS, getChannelIcon } from '@/constants/canais';
 import { TipoExperimento, CanalTipoSugestao, useUpdateCanalTipoSugestao } from '@/hooks/useTiposExperimento';
 
 interface SugestoesCanalMatrixProps {
@@ -83,19 +83,19 @@ export function SugestoesCanalMatrix({ tipos, sugestoes }: SugestoesCanalMatrixP
               </tr>
             </thead>
             <tbody>
-              {CANAIS.map((canalItem) => {
-                const IconComponent = canalItem.icon;
+              {CANAIS_OPTIONS.map((canal) => {
+                const IconComponent = getChannelIcon(canal.value);
                 return (
-                  <tr key={canalItem.nome} className="border-b hover:bg-muted/50">
+                  <tr key={canal.value} className="border-b hover:bg-muted/50">
                     <td className="p-2 font-medium">
                       <div className="flex items-center gap-2">
                         <IconComponent size={16} className="text-muted-foreground" />
-                        {canalItem.nome}
+                        {canal.label}
                       </div>
                     </td>
                     {tipos.filter(t => t.ativo).map((tipo) => (
                       <td key={tipo.id} className="p-2 text-center">
-                        {renderStars(canalItem.nome, tipo.id)}
+                        {renderStars(canal.value, tipo.id)}
                       </td>
                     ))}
                   </tr>
