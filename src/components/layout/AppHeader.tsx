@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function AppHeader() {
   return (
@@ -32,6 +33,9 @@ export function AppHeader() {
       <div className="flex items-center gap-4">
         {/* Notifications */}
         <NotificationDropdown />
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
 
         {/* Settings */}
         <Button variant="ghost" size="icon">
