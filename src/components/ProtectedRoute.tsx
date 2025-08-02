@@ -27,9 +27,15 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   // Check role permissions
   if (requiredRole) {
     const hasPermission = () => {
+      // Admin can access everything
       if (userRole === 'admin') return true;
-      if (requiredRole === 'editor' && userRole === 'editor') return true;
-      if (requiredRole === 'viewer') return true;
+      
+      // Editor can access editor and viewer level content
+      if (userRole === 'editor' && (requiredRole === 'editor' || requiredRole === 'viewer')) return true;
+      
+      // Viewer can only access viewer level content
+      if (userRole === 'viewer' && requiredRole === 'viewer') return true;
+      
       return false;
     };
 
