@@ -488,6 +488,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_can_access_experiment: {
+        Args: { experiment_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       department: "Marketing" | "Comercial" | "Produto" | "Tech"
