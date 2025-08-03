@@ -177,6 +177,17 @@ export default function ExperimentsList() {
     }));
   };
 
+  const handleEdit = (experimentId: string) => {
+    navigate(`/experimentos/${experimentId}/editar`);
+  };
+
+  const handleDelete = (experimentId: string) => {
+    if (window.confirm('Tem certeza de que deseja excluir este experimento?')) {
+      // TODO: Implementar lógica de exclusão
+      console.log('Excluir experimento:', experimentId);
+    }
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
     try {
@@ -449,11 +460,14 @@ export default function ExperimentsList() {
                               Visualizar
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEdit(exp.id)}>
                             <Edit2 className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem 
+                            className="text-destructive" 
+                            onClick={() => handleDelete(exp.id)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir
                           </DropdownMenuItem>
@@ -491,11 +505,14 @@ export default function ExperimentsList() {
                               Visualizar
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEdit(exp.id)}>
                             <Edit2 className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem 
+                            className="text-destructive" 
+                            onClick={() => handleDelete(exp.id)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir
                           </DropdownMenuItem>
