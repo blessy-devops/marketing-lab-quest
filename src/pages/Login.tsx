@@ -41,8 +41,15 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
       <AnimatedWrapper>
-        <Card className="w-full max-w-md md:max-w-2xl lg:max-w-3xl shadow-lg">
-          <CardHeader className="text-center space-y-4">
+        <Card 
+          className="w-full shadow-lg" 
+          style={{ 
+            width: '100%', 
+            maxWidth: '480px',
+            minWidth: '320px'
+          }}
+        >
+          <CardHeader className="text-center space-y-4 p-4">
             <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
               <LogIn className="h-8 w-8 text-primary" />
             </div>
@@ -54,7 +61,7 @@ const Login = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 p-4">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Email */}
               <div className="space-y-2">
