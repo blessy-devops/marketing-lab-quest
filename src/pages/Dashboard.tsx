@@ -134,7 +134,7 @@ export default function Dashboard() {
           asChild
           className="bg-gradient-to-r from-primary to-primary-glow"
         >
-          <Link to="/experimentos/novo">
+          <Link to="/experimentos/novo" className="flex items-center">
             <Beaker className="w-4 h-4 mr-2" />
             Novo Experimento
           </Link>
