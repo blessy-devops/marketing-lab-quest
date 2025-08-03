@@ -29,6 +29,7 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const Login = lazy(() => import("@/pages/Login"));
 const Signup = lazy(() => import("@/pages/Signup"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 
 // Protected Layout Component
 const ProtectedLayout = () => (
@@ -72,6 +73,14 @@ function App() {
                   element={
                     <LazyWrapper>
                       <ForgotPassword />
+                    </LazyWrapper>
+                  }
+                />
+                <Route
+                  path="/convite"
+                  element={
+                    <LazyWrapper>
+                      <AcceptInvite />
                     </LazyWrapper>
                   }
                 />
