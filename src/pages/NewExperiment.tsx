@@ -72,8 +72,19 @@ const canaisOptions = CANAIS_OPTIONS.map(c => c.value);
 
 export default function NewExperiment() {
   const navigate = useNavigate();
-  const { hasRole } = useAuth();
+  const { hasRole, loading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Aguardar o carregamento antes de verificar permissões
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold">Carregando...</h1>
+        </div>
+      </div>
+    );
+  }
 
   // Verificar permissão de acesso
   if (!hasRole('editor')) {
