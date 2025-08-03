@@ -53,37 +53,26 @@ export function AppSidebar() {
       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
 
   return (
-    <Sidebar
-      className={`${isCollapsed ? "w-14" : "w-64"} border-r border-sidebar-border bg-sidebar-background`}
-      collapsible="icon"
-    >
-      <SidebarContent className="px-3 py-4">
+    <Sidebar collapsible="icon">
+      <SidebarContent className="p-3">
         {/* Logo Section */}
-        <div className="mb-6 px-2">
-          {!isCollapsed ? (
-            <div className="flex items-center gap-2">
-              <img 
-                src="/src/assets/blessy-logo.png" 
-                alt="Blessy" 
-                className="w-8 h-8 rounded-lg"
-              />
-              <div>
-                <h1 className="font-bold text-sm text-sidebar-foreground">Blessy</h1>
-                <p className="text-xs text-sidebar-foreground/70">Growth Lab</p>
-              </div>
-            </div>
-          ) : (
+        <div className="mb-6 flex items-center justify-center group-data-[collapsible=icon]:justify-center">
+          <div className="flex items-center gap-2 group-data-[collapsible=icon]:gap-0">
             <img 
               src="/src/assets/blessy-logo.png" 
               alt="Blessy" 
-              className="w-8 h-8 rounded-lg mx-auto"
+              className="w-8 h-8 rounded-lg flex-shrink-0"
             />
-          )}
+            <div className="group-data-[collapsible=icon]:hidden">
+              <h1 className="font-bold text-sm text-sidebar-foreground">Blessy</h1>
+              <p className="text-xs text-sidebar-foreground/70">Growth Lab</p>
+            </div>
+          </div>
         </div>
 
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
             Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -97,7 +86,7 @@ export function AppSidebar() {
                       className={getNavCls}
                     >
                       <item.icon className="w-4 h-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      <span className="group-data-[collapsible=icon]:sr-only">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -108,7 +97,7 @@ export function AppSidebar() {
 
         {/* Analytics Navigation */}
         <SidebarGroup className="mt-6">
-          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
             Analytics
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -121,7 +110,7 @@ export function AppSidebar() {
                       className={getNavCls}
                     >
                       <item.icon className="w-4 h-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      <span className="group-data-[collapsible=icon]:sr-only">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -132,7 +121,7 @@ export function AppSidebar() {
 
         {/* Admin Navigation */}
         <SidebarGroup className="mt-6">
-          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
             Administração
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -141,7 +130,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild>
                   <NavLink to="/admin/tipos-experimento" className={getNavCls}>
                     <Settings className="w-4 h-4" />
-                    {!isCollapsed && <span>Tipos de Experimento</span>}
+                    <span className="group-data-[collapsible=icon]:sr-only">Tipos de Experimento</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
