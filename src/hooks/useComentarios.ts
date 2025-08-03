@@ -29,26 +29,41 @@ export const useComentarios = (experimentoId: string) => {
   const fetchComentarios = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First, get comments
+      const { data: comentariosData, error: comentariosError } = await supabase
         .from('comentarios')
-        .select(`
-          *,
-          profiles!inner(nome_completo, cargo)
-        `)
+        .select('*')
         .eq('experimento_id', experimentoId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (comentariosError) throw comentariosError;
+
+      if (!comentariosData || comentariosData.length === 0) {
+        setComentarios([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(comentariosData.map(c => c.usuario_id))];
+      
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, nome_completo, cargo')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
 
       // Map comments with user profile information
-      const comentariosComUsuario = data?.map(comentario => {
-        const profile = comentario.profiles;
+      const comentariosComUsuario = comentariosData.map(comentario => {
+        const profile = profilesData?.find(p => p.user_id === comentario.usuario_id);
         return {
           ...comentario,
           usuario_nome: profile?.nome_completo || 'Usuário',
           usuario_cargo: profile?.cargo || ''
         };
-      }) || [];
+      });
 
       setComentarios(comentariosComUsuario);
     } catch (error) {

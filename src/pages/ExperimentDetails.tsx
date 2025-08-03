@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { ComentarioItem } from "@/components/ComentarioItem";
 import { TipoExperimentoDisplay } from "@/components/forms/TipoExperimentoDisplay";
 
 type Metrica = Tables<"metricas">;
@@ -614,92 +615,21 @@ const ExperimentDetails = () => {
           ) : comentarios.length > 0 ? (
             <div className="space-y-4 mt-6">
               {comentarios.map((comentario) => (
-                <div key={comentario.id} className="border-l-4 border-primary/20 pl-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex gap-3 flex-1">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {comentario.usuario_nome?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <p className="font-medium text-sm">
-                            {comentario.usuario_nome || 'Usuário'}
-                          </p>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(comentario.created_at), {
-                              addSuffix: true,
-                              locale: ptBR
-                            })}
-                          </span>
-                          {comentario.updated_at && comentario.updated_at !== comentario.created_at && (
-                            <Badge variant="outline" className="text-xs">
-                              Editado
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {editingId === comentario.id ? (
-                          <div className="space-y-2">
-                            <Textarea
-                              value={editingText}
-                              onChange={(e) => setEditingText(e.target.value)}
-                              className="min-h-[60px]"
-                            />
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={async () => {
-                                  await editarComentario(comentario.id, editingText);
-                                }}
-                              >
-                                Salvar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingId(null);
-                                  setEditingText("");
-                                }}
-                              >
-                                Cancelar
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                            {comentario.texto}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Botões de ação (só para comentários próprios) */}
-                    {user && comentario.usuario_id === user.id && editingId !== comentario.id && (
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingId(comentario.id);
-                            setEditingText(comentario.texto);
-                          }}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => excluirComentario(comentario.id)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ComentarioItem
+                  key={comentario.id}
+                  comentario={comentario}
+                  user={user}
+                  editingId={editingId}
+                  editingText={editingText}
+                  setEditingId={setEditingId}
+                  setEditingText={setEditingText}
+                  editarComentario={editarComentario}
+                  excluirComentario={excluirComentario}
+                  onEditClick={(comentario) => {
+                    setEditingId(comentario.id);
+                    setEditingText(comentario.texto);
+                  }}
+                />
               ))}
             </div>
           ) : (
