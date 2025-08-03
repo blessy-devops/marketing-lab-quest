@@ -64,7 +64,7 @@ export const RestrictedButton = React.forwardRef<HTMLButtonElement, RestrictedBu
         )}
         {...props}
       >
-        {isRestricted && showLockIcon && (
+        {isRestricted && showLockIcon && !props.asChild && (
           <Lock className="w-4 h-4 mr-2" />
         )}
         {children}
