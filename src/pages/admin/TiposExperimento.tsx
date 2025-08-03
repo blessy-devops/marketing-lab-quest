@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Settings, Star } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Settings, Star, Grid3X3, List } from 'lucide-react';
 import { TipoExperimentoCard } from '@/components/admin/TipoExperimentoCard';
 import { TipoExperimentoModal } from '@/components/admin/TipoExperimentoModal';
 import { SugestoesCanalMatrix } from '@/components/admin/SugestoesCanalMatrix';
@@ -32,6 +34,7 @@ import {
 export default function TiposExperimento() {
   const [selectedTipo, setSelectedTipo] = useState<TipoExperimento | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTableView, setIsTableView] = useState(false);
 
   const { data: tipos = [], isLoading } = useTiposExperimento();
   const { data: allSubtipos = [] } = useSubtiposExperimento();
@@ -124,8 +127,16 @@ export default function TiposExperimento() {
 
         <TabsContent value="tipos" className="space-y-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Estatísticas</CardTitle>
+              <div className="flex items-center gap-2">
+                <Grid3X3 size={16} className={!isTableView ? "text-primary" : "text-muted-foreground"} />
+                <Switch
+                  checked={isTableView}
+                  onCheckedChange={setIsTableView}
+                />
+                <List size={16} className={isTableView ? "text-primary" : "text-muted-foreground"} />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -151,28 +162,86 @@ export default function TiposExperimento() {
             </CardContent>
           </Card>
 
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={tipos.map(t => t.id)}
-              strategy={rectSortingStrategy}
+          {!isTableView ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {tipos.map((tipo) => (
-                  <TipoExperimentoCard
-                    key={tipo.id}
-                    tipo={tipo}
-                    quantidadeSubtipos={getSubtiposCount(tipo.id)}
-                    onEdit={handleEdit}
-                    onToggleAtivo={handleToggleAtivo}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+              <SortableContext
+                items={tipos.map(t => t.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {tipos.map((tipo) => (
+                    <TipoExperimentoCard
+                      key={tipo.id}
+                      tipo={tipo}
+                      quantidadeSubtipos={getSubtiposCount(tipo.id)}
+                      onEdit={handleEdit}
+                      onToggleAtivo={handleToggleAtivo}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Código</TableHead>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Cor</TableHead>
+                      <TableHead>Subtipos</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Ordem</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tipos.map((tipo) => (
+                      <TableRow key={tipo.id}>
+                        <TableCell className="font-mono">{tipo.codigo}</TableCell>
+                        <TableCell className="font-medium">{tipo.nome}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-4 h-4 rounded-full border"
+                              style={{ backgroundColor: tipo.cor }}
+                            />
+                            <span className="text-sm text-muted-foreground">{tipo.cor}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="bg-secondary px-2 py-1 rounded-md text-sm">
+                            {getSubtiposCount(tipo.id)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={tipo.ativo}
+                            onCheckedChange={(checked) => handleToggleAtivo(tipo.id, checked)}
+                          />
+                        </TableCell>
+                        <TableCell>{tipo.ordem}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(tipo)}
+                          >
+                            Editar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
           {tipos.length === 0 && (
             <Card>
