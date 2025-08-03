@@ -9,12 +9,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { ArrowUpDown, Calendar, Eye, MoreHorizontal, Plus, Search, Edit2, Trash2, Filter, Grid, List, X } from 'lucide-react';
+import { ArrowUpDown, Calendar, Eye, MoreHorizontal, Plus, Search, Edit2, Trash2, Filter, Grid, List, X, ChevronDown } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useExperimentos } from '@/hooks/useSupabaseData';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CANAIS, CANAIS_OPTIONS, getChannelsByCategory, getChannelIcon } from "@/constants/canais";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
 interface ExperimentoExtended {
   id: string;
@@ -92,6 +94,7 @@ export default function ExperimentsList() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [openChannelCategories, setOpenChannelCategories] = useState<Record<string, boolean>>({});
 
   // Filter experiments
   const filteredExperiments = (experimentos || []).filter((exp: ExperimentoExtended) => {
@@ -165,6 +168,13 @@ export default function ExperimentsList() {
     } else {
       setSelectedTypes(selectedTypes.filter(t => t !== type));
     }
+  };
+
+  const toggleChannelCategory = (categoria: string) => {
+    setOpenChannelCategories(prev => ({
+      ...prev,
+      [categoria]: !prev[categoria]
+    }));
   };
 
   const formatDate = (dateString?: string) => {
@@ -271,26 +281,51 @@ export default function ExperimentsList() {
             {/* Channel Filter */}
             <div>
               <label className="text-sm font-medium mb-2 block">Canal</label>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-60 overflow-y-auto">
                 {Object.entries(getChannelsByCategory()).map(([categoria, canais]) => (
-                  <div key={categoria} className="space-y-2">
-                    <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">{categoria}</h4>
-                    <div className="space-y-1 pl-2">
-                      {canais.map((canal) => (
-                        <div key={canal.value} className="flex items-center space-x-2">
-                          <canal.icon className="w-3 h-3 text-muted-foreground" />
-                          <Checkbox
-                            id={canal.value}
-                            checked={selectedChannels.includes(canal.value)}
-                            onCheckedChange={() => handleChannelChange(canal.value)}
+                  <Collapsible
+                    key={categoria}
+                    open={openChannelCategories[categoria]}
+                    onOpenChange={() => toggleChannelCategory(categoria)}
+                    className="border rounded-md"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between p-2 h-auto text-xs font-medium"
+                      >
+                        <span>{categoria}</span>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="secondary" className="text-xs px-1 py-0">
+                            {canais.filter(canal => selectedChannels.includes(canal.value)).length}/{canais.length}
+                          </Badge>
+                          <ChevronDown
+                            className={cn(
+                              "h-3 w-3 transition-transform duration-200",
+                              openChannelCategories[categoria] && "rotate-180"
+                            )}
                           />
-                          <Label htmlFor={canal.value} className="text-xs font-normal cursor-pointer">
-                            {canal.label}
-                          </Label>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-2 pb-2">
+                      <div className="space-y-1 pt-1">
+                        {canais.map((canal) => (
+                          <div key={canal.value} className="flex items-center space-x-2">
+                            <canal.icon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <Checkbox
+                              id={canal.value}
+                              checked={selectedChannels.includes(canal.value)}
+                              onCheckedChange={() => handleChannelChange(canal.value)}
+                            />
+                            <Label htmlFor={canal.value} className="text-xs font-normal cursor-pointer truncate">
+                              {canal.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 ))}
               </div>
             </div>
