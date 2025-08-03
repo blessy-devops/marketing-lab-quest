@@ -1,4 +1,4 @@
-import { ArrowLeft, Moon, Sun, Monitor, Bell, Shield, User, Settings as SettingsIcon, Users, Camera } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Monitor, Bell, Shield, User, Settings as SettingsIcon, Users, Camera, Send, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -25,6 +27,20 @@ export default function Settings() {
     cargo: profile?.cargo || '',
     departamento: profile?.departamento as "Marketing" | "Comercial" | "Produto" | "Tech" | undefined
   });
+
+  // Estados para o formulário de convite
+  const [inviteData, setInviteData] = useState({
+    email: '',
+    role: 'viewer' as 'viewer' | 'editor' | 'admin',
+    departamento: '' as 'Marketing' | 'Comercial' | 'Produto' | 'Tech' | ''
+  });
+
+  // Estados para o modal de convite
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const getThemeIcon = () => {
     switch (theme) {
@@ -82,6 +98,85 @@ export default function Settings() {
       toast({
         title: "Erro",
         description: "Erro inesperado ao atualizar perfil.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateInvite = async () => {
+    if (!inviteData.email || !inviteData.departamento) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingInvite(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('convites')
+        .insert({
+          email: inviteData.email,
+          role: inviteData.role,
+          enviado_por: user?.id,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível gerar o convite.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const inviteLink = `${window.location.origin}/convite?token=${data.token}`;
+      setGeneratedLink(inviteLink);
+      setInviteEmail(inviteData.email);
+      setShowInviteModal(true);
+
+      // Limpar formulário
+      setInviteData({
+        email: '',
+        role: 'viewer',
+        departamento: ''
+      });
+
+      toast({
+        title: "Convite gerado",
+        description: "Link de convite criado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao gerar convite.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingInvite(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedLink);
+      setLinkCopied(true);
+      toast({
+        title: "Link copiado!",
+        description: "Link de convite copiado para a área de transferência.",
+      });
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar o link.",
         variant: "destructive",
       });
     }
@@ -372,22 +467,161 @@ export default function Settings() {
           {userRole === 'admin' && (
             <Card>
               <CardHeader>
-                <CardTitle>Gerenciamento de Usuários</CardTitle>
-                <CardDescription>
-                  Funcionalidades administrativas para gerenciar usuários do sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center text-muted-foreground py-8">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Funcionalidades de gerenciamento de usuários</p>
-                  <p className="text-sm mt-1">Em breve...</p>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Send className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>Convidar Novo Membro</CardTitle>
+                    <CardDescription>
+                      Envie convites para novos usuários ingressarem no sistema
+                    </CardDescription>
+                  </div>
                 </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-email">Email</Label>
+                    <Input
+                      id="invite-email"
+                      type="email"
+                      value={inviteData.email}
+                      onChange={(e) => setInviteData(prev => ({
+                        ...prev,
+                        email: e.target.value
+                      }))}
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-role">Nível de acesso</Label>
+                    <Select
+                      value={inviteData.role}
+                      onValueChange={(value) => setInviteData(prev => ({
+                        ...prev,
+                        role: value as 'viewer' | 'editor' | 'admin'
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o nível de acesso" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="viewer">Visualizador</SelectItem>
+                        <SelectItem value="editor">Editor</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-departamento">Departamento</Label>
+                    <Select
+                      value={inviteData.departamento}
+                      onValueChange={(value) => setInviteData(prev => ({
+                        ...prev,
+                        departamento: value as 'Marketing' | 'Comercial' | 'Produto' | 'Tech'
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o departamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Marketing">Marketing</SelectItem>
+                        <SelectItem value="Comercial">Comercial</SelectItem>
+                        <SelectItem value="Produto">Produto</SelectItem>
+                        <SelectItem value="Tech">Tech</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleGenerateInvite}
+                  disabled={isGeneratingInvite}
+                  className="w-full flex items-center gap-2"
+                >
+                  {isGeneratingInvite ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Gerar Link de Convite
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Modal de Link de Convite */}
+      <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Link de Convite Gerado</DialogTitle>
+            <DialogDescription>
+              Envie este link para <strong>{inviteEmail}</strong>. O convite expira em 7 dias.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Link de convite:</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={generatedLink}
+                  readOnly
+                  className="font-mono text-sm"
+                  onClick={(e) => e.currentTarget.select()}
+                />
+                <Button
+                  onClick={handleCopyLink}
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                >
+                  {linkCopied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCopyLink}
+                className="flex-1 flex items-center gap-2"
+              >
+                {linkCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Link Copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copiar Link
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => setShowInviteModal(false)}
+                variant="outline"
+              >
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
