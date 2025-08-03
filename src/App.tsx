@@ -22,6 +22,8 @@ const Reports = lazy(() => import("@/pages/Reports"));
 const Gallery = lazy(() => import("@/pages/Gallery"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const TiposExperimento = lazy(() => import("@/pages/admin/TiposExperimento"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const Settings = lazy(() => import("@/pages/Settings"));
 
 // Auth pages
 const Login = lazy(() => import("@/pages/Login"));
@@ -146,6 +148,22 @@ function App() {
                     element={
                       <LazyWrapper>
                         <TiposExperimento />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="perfil"
+                    element={
+                      <LazyWrapper>
+                        <Profile />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="configuracoes"
+                    element={
+                      <LazyWrapper>
+                        <Settings />
                       </LazyWrapper>
                     }
                   />

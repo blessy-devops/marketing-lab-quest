@@ -1,4 +1,5 @@
 import { Search, Settings, User } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -49,8 +50,10 @@ export function AppHeader() {
         <ThemeToggle />
 
         {/* Settings */}
-        <Button variant="ghost" size="icon">
-          <Settings className="h-4 w-4" />
+        <Button variant="ghost" size="icon" asChild>
+          <Link to="/configuracoes">
+            <Settings className="h-4 w-4" />
+          </Link>
         </Button>
 
         {/* User Menu */}
@@ -77,13 +80,17 @@ export function AppHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Perfil</span>
+            <DropdownMenuItem asChild>
+              <Link to="/perfil" className="flex items-center">
+                <User className="mr-2 h-4 w-4" />
+                <span>Perfil</span>
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Configurações</span>
+            <DropdownMenuItem asChild>
+              <Link to="/configuracoes" className="flex items-center">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configurações</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
