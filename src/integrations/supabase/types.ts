@@ -144,6 +144,39 @@ export type Database = {
         }
         Relationships: []
       }
+      convites: {
+        Row: {
+          aceito: boolean | null
+          created_at: string | null
+          email: string
+          enviado_por: string | null
+          expires_at: string | null
+          id: string
+          role: string | null
+          token: string | null
+        }
+        Insert: {
+          aceito?: boolean | null
+          created_at?: string | null
+          email: string
+          enviado_por?: string | null
+          expires_at?: string | null
+          id?: string
+          role?: string | null
+          token?: string | null
+        }
+        Update: {
+          aceito?: boolean | null
+          created_at?: string | null
+          email?: string
+          enviado_por?: string | null
+          expires_at?: string | null
+          id?: string
+          role?: string | null
+          token?: string | null
+        }
+        Relationships: []
+      }
       experimentos: {
         Row: {
           canais: string[] | null
