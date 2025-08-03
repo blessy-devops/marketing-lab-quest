@@ -69,7 +69,7 @@ export function AppSidebar() {
               />
               <div>
                 <h1 className="font-bold text-sm text-sidebar-foreground">Blessy</h1>
-                <p className="text-xs text-sidebar-foreground/70">Marketing Lab</p>
+                <p className="text-xs text-sidebar-foreground/70">Growth Lab</p>
               </div>
             </div>
           ) : (
