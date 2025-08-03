@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,7 +17,7 @@ export const useInvites = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const getInviteByToken = async (token: string) => {
+  const getInviteByToken = useCallback(async (token: string) => {
     try {
       setLoading(true);
       
@@ -41,9 +41,9 @@ export const useInvites = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const acceptInvite = async (
+  const acceptInvite = useCallback(async (
     token: string, 
     userData: { 
       nome_completo: string; 
@@ -145,7 +145,7 @@ export const useInvites = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getInviteByToken, toast]);
 
   return {
     loading,

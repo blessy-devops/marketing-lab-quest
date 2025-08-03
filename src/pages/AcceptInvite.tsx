@@ -70,7 +70,7 @@ const AcceptInvite = () => {
     };
 
     loadInvite();
-  }, [token, getInviteByToken]);
+  }, [token]); // Removido getInviteByToken das dependências para evitar loop
 
   const onSubmit = async (data: AcceptInviteData) => {
     if (!token) {
@@ -134,8 +134,8 @@ const AcceptInvite = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
-      <AnimatedWrapper>
-        <Card className="w-full max-w-2xl shadow-lg">
+      <AnimatedWrapper duration={0.4} delay={0.1}>
+        <Card className="w-full max-w-2xl shadow-lg" style={{ minHeight: '500px' }}>
           <CardHeader className="text-center space-y-4">
             <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
               <UserPlus className="h-8 w-8 text-primary" />

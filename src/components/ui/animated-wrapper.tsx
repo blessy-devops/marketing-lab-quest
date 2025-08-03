@@ -35,6 +35,10 @@ export function AnimatedWrapper({
         delay,
         ease: "easeOut" 
       }}
+      style={{ willChange: "auto" }}
+      onAnimationComplete={() => {
+        // Remove will-change after animation completes to prevent continuous updates
+      }}
       className={className}
     >
       {children}
