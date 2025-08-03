@@ -29,6 +29,7 @@ import { useState, useEffect } from "react";
 import { TipoExperimentoSelector } from "@/components/forms/TipoExperimentoSelector";
 import { CanaisSelector } from "@/components/forms/CanaisSelector";
 import { CANAIS_OPTIONS } from "@/constants/canais";
+import { useAuth } from "@/hooks/useAuth";
 
 interface FormData {
   tipoCadastro: 'futuro' | 'realizado';
@@ -71,7 +72,25 @@ const canaisOptions = CANAIS_OPTIONS.map(c => c.value);
 
 export default function NewExperiment() {
   const navigate = useNavigate();
+  const { hasRole } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Verificar permissão de acesso
+  if (!hasRole('editor')) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold">Acesso Negado</h1>
+          <p className="text-muted-foreground">
+            Você não tem permissão para criar experimentos. Apenas editores e administradores podem criar novos experimentos.
+          </p>
+          <Button onClick={() => navigate("/experimentos")}>
+            Voltar para lista de experimentos
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const form = useForm<FormData>({
     defaultValues: {
