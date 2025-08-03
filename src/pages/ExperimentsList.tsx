@@ -9,6 +9,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { ArrowUpDown, Calendar, Eye, MoreHorizontal, Plus, Search, Edit2, Trash2, Filter, Grid, List, X, ChevronDown } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useExperimentos } from '@/hooks/useSupabaseData';
@@ -291,54 +293,49 @@ export default function ExperimentsList() {
 
             {/* Channel Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Canal</label>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {Object.entries(getChannelsByCategory()).map(([categoria, canais]) => (
-                  <Collapsible
-                    key={categoria}
-                    open={openChannelCategories[categoria]}
-                    onOpenChange={() => toggleChannelCategory(categoria)}
-                    className="border rounded-md"
+              <label className="text-sm font-medium mb-2 block">
+                Canal ({selectedChannels.length} selecionados)
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between text-xs"
                   >
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-between p-2 h-auto text-xs font-medium"
-                      >
-                        <span>{categoria}</span>
-                        <div className="flex items-center gap-1">
-                          <Badge variant="secondary" className="text-xs px-1 py-0">
-                            {canais.filter(canal => selectedChannels.includes(canal.value)).length}/{canais.length}
-                          </Badge>
-                          <ChevronDown
-                            className={cn(
-                              "h-3 w-3 transition-transform duration-200",
-                              openChannelCategories[categoria] && "rotate-180"
-                            )}
-                          />
-                        </div>
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="px-2 pb-2">
-                      <div className="space-y-1 pt-1">
-                        {canais.map((canal) => (
-                          <div key={canal.value} className="flex items-center space-x-2">
-                            <canal.icon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                            <Checkbox
-                              id={canal.value}
-                              checked={selectedChannels.includes(canal.value)}
-                              onCheckedChange={() => handleChannelChange(canal.value)}
-                            />
-                            <Label htmlFor={canal.value} className="text-xs font-normal cursor-pointer truncate">
+                    {selectedChannels.length > 0
+                      ? `${selectedChannels.length} canal(is) selecionado(s)`
+                      : "Selecionar canais..."}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Pesquisar canais..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum canal encontrado.</CommandEmpty>
+                      {Object.entries(getChannelsByCategory()).map(([categoria, canais]) => (
+                        <CommandGroup key={categoria} heading={categoria}>
+                          {canais.map((canal) => (
+                            <CommandItem
+                              key={canal.value}
+                              value={canal.value}
+                              onSelect={() => handleChannelChange(canal.value)}
+                            >
+                              <Checkbox
+                                checked={selectedChannels.includes(canal.value)}
+                                className="mr-2"
+                              />
+                              <canal.icon className="mr-2 h-4 w-4" />
                               {canal.label}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Date Filters */}
