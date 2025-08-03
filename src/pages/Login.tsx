@@ -45,7 +45,7 @@ const Login = () => {
           className="w-full shadow-lg" 
           style={{ 
             width: '100%', 
-            maxWidth: '600px',
+            maxWidth: '750px',
             minWidth: '320px'
           }}
         >
