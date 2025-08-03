@@ -7,6 +7,7 @@ type Comentario = Tables<"comentarios">;
 
 interface ComentarioComUsuario extends Comentario {
   usuario_nome?: string;
+  usuario_cargo?: string;
 }
 
 export const useComentarios = (experimentoId: string) => {
@@ -30,20 +31,24 @@ export const useComentarios = (experimentoId: string) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('comentarios')
-        .select('*')
+        .select(`
+          *,
+          profiles!inner(nome_completo, cargo)
+        `)
         .eq('experimento_id', experimentoId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // For now, we'll use the current user's email for their own comments
-      // In a production app, you'd typically store user names in a profiles table
-      const comentariosComUsuario = data?.map(comentario => ({
-        ...comentario,
-        usuario_nome: comentario.usuario_id === user?.id 
-          ? user?.email?.split('@')[0] || 'Você'
-          : `Usuário ${comentario.usuario_id.slice(0, 8)}`
-      })) || [];
+      // Map comments with user profile information
+      const comentariosComUsuario = data?.map(comentario => {
+        const profile = comentario.profiles;
+        return {
+          ...comentario,
+          usuario_nome: profile?.nome_completo || 'Usuário',
+          usuario_cargo: profile?.cargo || ''
+        };
+      }) || [];
 
       setComentarios(comentariosComUsuario);
     } catch (error) {

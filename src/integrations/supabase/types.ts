@@ -88,6 +88,35 @@ export type Database = {
           },
         ]
       }
+      comentario_curtidas: {
+        Row: {
+          comentario_id: string
+          created_at: string
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          comentario_id: string
+          created_at?: string
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          comentario_id?: string
+          created_at?: string
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comentario_curtidas_comentario_id_fkey"
+            columns: ["comentario_id"]
+            isOneToOne: false
+            referencedRelation: "comentarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comentarios: {
         Row: {
           created_at: string
