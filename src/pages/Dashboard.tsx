@@ -2,6 +2,7 @@ import React from "react";
 import { BarChart3, Beaker, TrendingUp, Users, Calendar, Target, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RestrictedButton } from "@/components/ui/restricted-button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 // import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -127,12 +128,17 @@ export default function Dashboard() {
             Visão geral dos seus experimentos de marketing
           </p>
         </div>
-        <Link to="/experimentos/novo">
-          <Button className="bg-gradient-to-r from-primary to-primary-glow">
+        <RestrictedButton 
+          permission="canCreate"
+          tooltipMessage="Apenas editores e admins podem criar experimentos"
+          asChild
+          className="bg-gradient-to-r from-primary to-primary-glow"
+        >
+          <Link to="/experimentos/novo">
             <Beaker className="w-4 h-4 mr-2" />
             Novo Experimento
-          </Button>
-        </Link>
+          </Link>
+        </RestrictedButton>
       </div>
 
       {/* Métricas principais */}

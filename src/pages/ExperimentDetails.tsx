@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Edit2, Copy, Trash2, Plus, Upload, FileText, Image, Link, Calendar, User, Target, TrendingUp, CheckCircle, XCircle, MessageSquare, History, Send, Edit, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RestrictedButton } from "@/components/ui/restricted-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -207,32 +208,38 @@ const ExperimentDetails = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {hasRole('editor') && (
+          {user && (
             <>
-              <Button
-                variant="outline"
+              <RestrictedButton 
+                permission="canEdit"
+                tooltipMessage="Apenas editores e admins podem editar experimentos"
+                variant="outline" 
                 size="sm"
                 onClick={() => navigate(`/experimentos/${id}/editar`)}
               >
                 <Edit2 className="h-4 w-4 mr-2" />
                 Editar
-              </Button>
-              <Button
+              </RestrictedButton>
+              <RestrictedButton 
+                permission="canCreate"
+                tooltipMessage="Apenas editores e admins podem duplicar experimentos"
                 variant="outline"
                 size="sm"
                 onClick={handleDuplicate}
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicar
-              </Button>
-              <Button
+              </RestrictedButton>
+              <RestrictedButton
+                permission="canDelete"
+                tooltipMessage="Apenas admins podem excluir experimentos"
                 variant="destructive"
                 size="sm"
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir
-              </Button>
+              </RestrictedButton>
             </>
           )}
         </div>

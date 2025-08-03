@@ -130,6 +130,11 @@ export default {
 				'skeleton': {
 					'0%': { backgroundPosition: '-200px 0' },
 					'100%': { backgroundPosition: 'calc(200px + 100%) 0' }
+				},
+				'shake': {
+					'0%, 100%': { transform: 'translateX(0)' },
+					'10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-2px)' },
+					'20%, 40%, 60%, 80%': { transform: 'translateX(2px)' }
 				}
 			},
 			animation: {
@@ -141,7 +146,8 @@ export default {
 				'slide-in-right': 'slide-in-right 0.3s ease-out',
 				'slide-in-left': 'slide-in-left 0.3s ease-out',
 				'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-				'skeleton': 'skeleton 1.2s ease-in-out infinite'
+				'skeleton': 'skeleton 1.2s ease-in-out infinite',
+				'shake': 'shake 0.5s ease-in-out'
 			}
 		}
 	},

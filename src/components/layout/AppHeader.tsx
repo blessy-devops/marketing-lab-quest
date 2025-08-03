@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { RoleSelector } from "@/components/ui/role-selector";
 
 export function AppHeader() {
   return (
@@ -31,6 +32,9 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Role Selector (Development) */}
+        <RoleSelector />
+
         {/* Notifications */}
         <NotificationDropdown />
 

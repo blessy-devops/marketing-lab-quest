@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
+import { UserProvider } from "@/contexts/UserContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LazyWrapper } from "@/components/ui/lazy-wrapper";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -44,7 +45,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>
-            <BrowserRouter>
+            <UserProvider>
+              <BrowserRouter>
               <Routes>
                 {/* Public Routes */}
                 <Route
@@ -102,21 +104,17 @@ function App() {
                   <Route
                     path="experimentos/:id/editar"
                     element={
-                      <ProtectedRoute requiredRole="editor">
-                        <LazyWrapper>
-                          <EditExperiment />
-                        </LazyWrapper>
-                      </ProtectedRoute>
+                      <LazyWrapper>
+                        <EditExperiment />
+                      </LazyWrapper>
                     }
                   />
                   <Route
                     path="experimentos/novo"
                     element={
-                      <ProtectedRoute requiredRole="editor">
-                        <LazyWrapper>
-                          <NewExperiment />
-                        </LazyWrapper>
-                      </ProtectedRoute>
+                      <LazyWrapper>
+                        <NewExperiment />
+                      </LazyWrapper>
                     }
                   />
                   <Route
@@ -146,11 +144,9 @@ function App() {
                   <Route
                     path="admin/tipos-experimento"
                     element={
-                      <ProtectedRoute requiredRole="admin">
-                        <LazyWrapper>
-                          <TiposExperimento />
-                        </LazyWrapper>
-                      </ProtectedRoute>
+                      <LazyWrapper>
+                        <TiposExperimento />
+                      </LazyWrapper>
                     }
                   />
                   <Route
@@ -164,6 +160,7 @@ function App() {
                 </Route>
               </Routes>
             </BrowserRouter>
+            </UserProvider>
           </AuthProvider>
           <Toaster />
           <Sonner />
