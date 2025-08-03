@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/form";
 import { useState, useEffect } from "react";
 import { TipoExperimentoSelector } from "@/components/forms/TipoExperimentoSelector";
+import { CanaisSelector } from "@/components/forms/CanaisSelector";
 import { CANAIS_OPTIONS } from "@/constants/canais";
 
 interface FormData {
@@ -469,51 +470,8 @@ export default function NewExperiment() {
                   Selecione os canais onde o experimento será executado
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <FormField
-                  control={form.control}
-                  name="canais"
-                  render={() => (
-                    <FormItem>
-                      <div className="grid gap-3">
-                        {canaisOptions.map((canal) => (
-                          <FormField
-                            key={canal}
-                            control={form.control}
-                            name="canais"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={canal}
-                                  className="flex flex-row items-start space-x-3 space-y-0"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(canal)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, canal])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== canal
-                                              )
-                                            )
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    {canal}
-                                  </FormLabel>
-                                </FormItem>
-                              )
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+               <CardContent>
+                <CanaisSelector control={form.control} />
               </CardContent>
             </Card>
 

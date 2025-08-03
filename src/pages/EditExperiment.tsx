@@ -19,6 +19,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { CANAIS_OPTIONS, getChannelsByCategory } from "@/constants/canais";
 import { useExperimentosComResultados } from "@/hooks/useSupabaseData";
+import { CanaisSelector } from "@/components/forms/CanaisSelector";
+import { Form, FormField, FormItem } from "@/components/ui/form";
 
 interface FormData {
   nome: string;
@@ -397,30 +399,18 @@ export default function EditExperiment() {
                   Selecione os canais onde o experimento será executado
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {Object.entries(getChannelsByCategory()).map(([categoria, canais]) => (
-                  <div key={categoria} className="space-y-2">
-                    <h4 className="font-medium text-sm text-muted-foreground">{categoria}</h4>
-                    <div className="space-y-2 pl-2">
-                      {canais.map((canal) => (
-                        <div key={canal.value} className="flex items-center space-x-2">
-                          <canal.icon className="w-4 h-4 text-muted-foreground" />
-                          <Checkbox
-                            id={canal.value}
-                            checked={form.watch("canais").includes(canal.value)}
-                            onCheckedChange={() => toggleCanal(canal.value)}
-                          />
-                          <Label htmlFor={canal.value} className="text-sm font-normal cursor-pointer">
-                            {canal.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {form.formState.errors.canais && (
-                  <p className="text-sm text-destructive">{form.formState.errors.canais.message}</p>
-                )}
+               <CardContent>
+                <Form {...form}>
+                  <FormField
+                    control={form.control}
+                    name="canais"
+                    render={() => (
+                      <FormItem>
+                        <CanaisSelector control={form.control} />
+                      </FormItem>
+                    )}
+                  />
+                </Form>
               </CardContent>
             </Card>
           </div>
