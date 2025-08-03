@@ -14,8 +14,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { RoleSelector } from "@/components/ui/role-selector";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AppHeader() {
+  const { user, profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-border/40 bg-background/80 backdrop-blur-sm px-6">
       <div className="flex items-center gap-4">
@@ -61,9 +68,11 @@ export function AppHeader() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Marketing Lab</p>
+                <p className="text-sm font-medium leading-none">
+                  {user?.email?.split('@')[0] || 'Usuário'}
+                </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  usuario@empresa.com
+                  {user?.email || 'usuario@empresa.com'}
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -77,7 +86,7 @@ export function AppHeader() {
               <span>Configurações</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
               <span>Sair</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
