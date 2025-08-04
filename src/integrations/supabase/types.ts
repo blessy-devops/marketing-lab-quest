@@ -49,6 +49,45 @@ export type Database = {
           },
         ]
       }
+      cache_oraculo: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          hit_count: number | null
+          id: string
+          pergunta: string
+          pergunta_normalizada: string | null
+          resposta: Json | null
+          tempo_resposta_ms: number | null
+          tipo_consulta: string | null
+          tokens_usados: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          hit_count?: number | null
+          id?: string
+          pergunta: string
+          pergunta_normalizada?: string | null
+          resposta?: Json | null
+          tempo_resposta_ms?: number | null
+          tipo_consulta?: string | null
+          tokens_usados?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          hit_count?: number | null
+          id?: string
+          pergunta?: string
+          pergunta_normalizada?: string | null
+          resposta?: Json | null
+          tempo_resposta_ms?: number | null
+          tipo_consulta?: string | null
+          tokens_usados?: number | null
+        }
+        Relationships: []
+      }
       canal_tipo_sugestao: {
         Row: {
           canal: string
@@ -179,6 +218,7 @@ export type Database = {
       }
       experimentos: {
         Row: {
+          base_conhecimento: boolean | null
           canais: string[] | null
           created_at: string
           data_fim: string | null
@@ -190,11 +230,13 @@ export type Database = {
           status: string | null
           subtipo_customizado: string | null
           subtipo_experimento_id: string | null
+          tags: string[] | null
           tipo: string | null
           tipo_experimento_id: string | null
           updated_at: string
         }
         Insert: {
+          base_conhecimento?: boolean | null
           canais?: string[] | null
           created_at?: string
           data_fim?: string | null
@@ -206,11 +248,13 @@ export type Database = {
           status?: string | null
           subtipo_customizado?: string | null
           subtipo_experimento_id?: string | null
+          tags?: string[] | null
           tipo?: string | null
           tipo_experimento_id?: string | null
           updated_at?: string
         }
         Update: {
+          base_conhecimento?: boolean | null
           canais?: string[] | null
           created_at?: string
           data_fim?: string | null
@@ -222,6 +266,7 @@ export type Database = {
           status?: string | null
           subtipo_customizado?: string | null
           subtipo_experimento_id?: string | null
+          tags?: string[] | null
           tipo?: string | null
           tipo_experimento_id?: string | null
           updated_at?: string
@@ -249,6 +294,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      insights_processados: {
+        Row: {
+          confianca: number | null
+          created_at: string | null
+          experimentos_base: string[] | null
+          id: string
+          insight: Json | null
+          padrao_identificado: string | null
+          tipo: string | null
+        }
+        Insert: {
+          confianca?: number | null
+          created_at?: string | null
+          experimentos_base?: string[] | null
+          id?: string
+          insight?: Json | null
+          padrao_identificado?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          confianca?: number | null
+          created_at?: string | null
+          experimentos_base?: string[] | null
+          id?: string
+          insight?: Json | null
+          padrao_identificado?: string | null
+          tipo?: string | null
+        }
+        Relationships: []
       }
       metricas: {
         Row: {
@@ -325,6 +400,154 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      playbook_ratings: {
+        Row: {
+          comentario: string | null
+          created_at: string
+          id: string
+          playbook_id: string
+          rating: number
+          usuario_id: string
+        }
+        Insert: {
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          playbook_id: string
+          rating: number
+          usuario_id: string
+        }
+        Update: {
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          playbook_id?: string
+          rating?: number
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_ratings_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "playbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playbook_usos: {
+        Row: {
+          created_at: string
+          experimento_id: string | null
+          id: string
+          observacoes: string | null
+          playbook_id: string
+          roi_obtido: number | null
+          sucesso: boolean | null
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          experimento_id?: string | null
+          id?: string
+          observacoes?: string | null
+          playbook_id: string
+          roi_obtido?: number | null
+          sucesso?: boolean | null
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          experimento_id?: string | null
+          id?: string
+          observacoes?: string | null
+          playbook_id?: string
+          roi_obtido?: number | null
+          sucesso?: boolean | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_usos_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "playbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playbooks: {
+        Row: {
+          auto_gerado: boolean | null
+          casos_sucesso: Json | null
+          categoria: string
+          cenario_ideal: string | null
+          conteudo: Json
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          experimento_origem_id: string | null
+          id: string
+          metricas: Json | null
+          resultados_esperados: string | null
+          roi_medio: number | null
+          sum_ratings: number | null
+          tags: string[] | null
+          taxa_sucesso: number | null
+          titulo: string
+          total_ratings: number | null
+          updated_at: string
+          usos_count: number | null
+          variacoes: Json | null
+        }
+        Insert: {
+          auto_gerado?: boolean | null
+          casos_sucesso?: Json | null
+          categoria: string
+          cenario_ideal?: string | null
+          conteudo?: Json
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          experimento_origem_id?: string | null
+          id?: string
+          metricas?: Json | null
+          resultados_esperados?: string | null
+          roi_medio?: number | null
+          sum_ratings?: number | null
+          tags?: string[] | null
+          taxa_sucesso?: number | null
+          titulo: string
+          total_ratings?: number | null
+          updated_at?: string
+          usos_count?: number | null
+          variacoes?: Json | null
+        }
+        Update: {
+          auto_gerado?: boolean | null
+          casos_sucesso?: Json | null
+          categoria?: string
+          cenario_ideal?: string | null
+          conteudo?: Json
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          experimento_origem_id?: string | null
+          id?: string
+          metricas?: Json | null
+          resultados_esperados?: string | null
+          roi_medio?: number | null
+          sum_ratings?: number | null
+          tags?: string[] | null
+          taxa_sucesso?: number | null
+          titulo?: string
+          total_ratings?: number | null
+          updated_at?: string
+          usos_count?: number | null
+          variacoes?: Json | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
