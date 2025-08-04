@@ -127,6 +127,54 @@ export type Database = {
           },
         ]
       }
+      ciclo_completo_analytics: {
+        Row: {
+          consulta_id: string | null
+          created_at: string
+          experimento_id: string | null
+          id: string
+          observacoes: string | null
+          playbook_id: string | null
+          resultado_id: string | null
+          roi_obtido: number | null
+          status: string | null
+          sucesso: boolean | null
+          tempo_total_dias: number | null
+          updated_at: string
+          usuario_id: string | null
+        }
+        Insert: {
+          consulta_id?: string | null
+          created_at?: string
+          experimento_id?: string | null
+          id?: string
+          observacoes?: string | null
+          playbook_id?: string | null
+          resultado_id?: string | null
+          roi_obtido?: number | null
+          status?: string | null
+          sucesso?: boolean | null
+          tempo_total_dias?: number | null
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          consulta_id?: string | null
+          created_at?: string
+          experimento_id?: string | null
+          id?: string
+          observacoes?: string | null
+          playbook_id?: string | null
+          resultado_id?: string | null
+          roi_obtido?: number | null
+          status?: string | null
+          sucesso?: boolean | null
+          tempo_total_dias?: number | null
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       comentario_curtidas: {
         Row: {
           comentario_id: string
@@ -400,6 +448,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oraculo_consultas: {
+        Row: {
+          created_at: string
+          experimento_gerado_id: string | null
+          from_cache: boolean | null
+          id: string
+          pergunta: string
+          pergunta_normalizada: string | null
+          resposta: Json | null
+          tempo_resposta_ms: number | null
+          tipo_consulta: string | null
+          tokens_usados: number | null
+          updated_at: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          experimento_gerado_id?: string | null
+          from_cache?: boolean | null
+          id?: string
+          pergunta: string
+          pergunta_normalizada?: string | null
+          resposta?: Json | null
+          tempo_resposta_ms?: number | null
+          tipo_consulta?: string | null
+          tokens_usados?: number | null
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          experimento_gerado_id?: string | null
+          from_cache?: boolean | null
+          id?: string
+          pergunta?: string
+          pergunta_normalizada?: string | null
+          resposta?: Json | null
+          tempo_resposta_ms?: number | null
+          tipo_consulta?: string | null
+          tokens_usados?: number | null
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
       }
       playbook_ratings: {
         Row: {
@@ -765,6 +858,20 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_oraculo_metrics: {
+        Args: { days_back?: number }
+        Returns: {
+          total_consultas: number
+          consultas_com_experimento: number
+          taxa_conversao_experimento: number
+          experimentos_com_sucesso: number
+          taxa_sucesso_experimentos: number
+          roi_medio: number
+          tempo_medio_ciclo: number
+          consultas_por_tipo: Json
+          tendencia_uso: Json
+        }[]
       }
       has_role: {
         Args: {
