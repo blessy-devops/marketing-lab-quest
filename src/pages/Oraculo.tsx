@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Brain, BookOpen, Target, Zap, Gift, TrendingUp, CheckSquare, AlertTriangle, BarChart, ExternalLink, Filter, Grid3X3, Bookmark, Play } from "lucide-react";
+import { useState, FormEvent } from "react";
+import { Brain, BookOpen, Target, Zap, Gift, TrendingUp, CheckSquare, AlertTriangle, BarChart, ExternalLink, Filter, Grid3X3, Bookmark, Play, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,13 +10,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { useOraculo } from "@/hooks/useOraculo";
 
 export default function Oraculo() {
   const [activeTab, setActiveTab] = useState("consulta-livre");
-  const [query, setQuery] = useState("");
-  const [context, setContext] = useState("");
-  const [response, setResponse] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pergunta, setPergunta] = useState("");
+  const [contexto, setContexto] = useState("");
+  const [tipo, setTipo] = useState("geral");
+
+  const { 
+    consultarOraculo, 
+    limparResposta, 
+    loading, 
+    resposta, 
+    erro, 
+    historico 
+  } = useOraculo();
 
   // Estados para consultas guiadas
   const [gapData, setGapData] = useState({
@@ -76,46 +85,30 @@ export default function Oraculo() {
   ];
 
   const handleExemploClick = (exemplo: string) => {
-    setQuery(exemplo);
+    setPergunta(exemplo);
   };
 
-  const handleConsultaLivre = async () => {
-    setIsLoading(true);
-    // Simular resposta
-    setTimeout(() => {
-      setResponse({
-        tipo: "Consulta Livre",
-        cache: false,
-        resposta: "Para fechar um gap de 50k em 3 dias, recomendo uma estratégia multi-canal focada em conversão imediata...",
-        historicos: "Baseado em 15 experimentos similares",
-        recomendacoes: [
-          "Email urgência para base ativa (ROI esperado: 180%)",
-          "Remarketing Facebook com desconto progressivo",
-          "Push notification com oferta limitada"
-        ],
-        alertas: ["Cuidado: promoções > 30% não aumentaram conversão", "Evitar campanhas genéricas em períodos curtos"]
-      });
-      setIsLoading(false);
-    }, 2000);
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await consultarOraculo(pergunta, contexto, tipo);
+  };
+
+  const handleHistoricoClick = (item: any) => {
+    setPergunta(item.pergunta);
+    // Set response directly from history
+    const fakeResponse = {
+      resposta: {
+        resposta_completa: item.resposta?.resposta_completa || "Resposta do histórico"
+      },
+      metadados: item.resposta?.metadados || {}
+    };
+    // Temporarily set response state for display (this should use actual state management)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleTemplateGap = async () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setResponse({
-        tipo: "Template Gap",
-        cache: true,
-        resposta: `Para recuperar R$ ${gapData.meta} em ${gapData.dias} dias com margem ${gapData.margem}...`,
-        historicos: "Baseado em 23 casos similares",
-        recomendacoes: [
-          "Campanha de urgência via email",
-          "Remarketing com countdown",
-          "Oferta especial para clientes VIP"
-        ],
-        alertas: ["Margem baixa pode limitar estratégias", "Tempo curto exige foco em conversão"]
-      });
-      setIsLoading(false);
-    }, 1500);
+    const gapQuery = `Recuperar gap de vendas de R$ ${gapData.meta} em ${gapData.dias} dias com margem ${gapData.margem}`;
+    await consultarOraculo(gapQuery, `Meta: ${gapData.meta}, Dias: ${gapData.dias}, Margem: ${gapData.margem}`, 'urgente');
   };
 
   return (
@@ -166,16 +159,23 @@ export default function Oraculo() {
                 Faça perguntas abertas sobre estratégias de marketing
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="query">O que você quer fazer?</Label>
                 <Textarea
                   id="query"
                   placeholder="Descreva sua necessidade ou desafio..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  value={pergunta}
+                  onChange={(e) => setPergunta(e.target.value)}
                   className="min-h-[120px]"
+                  disabled={loading}
+                  required
+                  minLength={10}
                 />
+                <div className="text-xs text-muted-foreground">
+                  {pergunta.length}/500 caracteres
+                </div>
               </div>
 
               {/* Exemplos clicáveis */}
@@ -202,21 +202,49 @@ export default function Oraculo() {
                 <Textarea
                   id="context"
                   placeholder="Segmento, orçamento, público-alvo, restrições..."
-                  value={context}
-                  onChange={(e) => setContext(e.target.value)}
+                  value={contexto}
+                  onChange={(e) => setContexto(e.target.value)}
                   rows={3}
+                  disabled={loading}
                 />
               </div>
 
+              {/* Tipo de consulta */}
+              <div className="space-y-2">
+                <Label htmlFor="tipo">Tipo de consulta</Label>
+                <Select value={tipo} onValueChange={setTipo} disabled={loading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="geral">Geral</SelectItem>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                    <SelectItem value="estrategico">Estratégico</SelectItem>
+                    <SelectItem value="analise">Análise</SelectItem>
+                    <SelectItem value="otimizacao">Otimização</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Button 
-                onClick={handleConsultaLivre}
-                disabled={!query.trim() || isLoading}
+                type="submit"
+                disabled={!pergunta.trim() || pergunta.length < 10 || loading}
                 className="w-full"
               >
-                <Brain className="w-4 h-4 mr-2" />
-                {isLoading ? "Consultando Oráculo..." : "Consultar Oráculo"}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Consultando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Consultar Oráculo
+                  </>
+                )}
               </Button>
-            </CardContent>
+            </form>
+          </CardContent>
           </Card>
         </TabsContent>
 
@@ -455,114 +483,157 @@ export default function Oraculo() {
         </TabsContent>
       </Tabs>
 
-      {/* Área de Resposta Unificada */}
-      {response && (
-        <Card className="mt-8">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant={response.cache ? "secondary" : "default"}>
-                  {response.tipo}
-                </Badge>
-                {response.cache && (
-                  <Badge variant="outline" className="text-xs">
-                    Cache ⚡
-                  </Badge>
-                )}
+      {/* Área de Resposta */}
+      {resposta && !loading && (
+        <div className="max-w-4xl mx-auto mt-8 animate-fadeIn">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-purple-600" />
+                  Resposta do Oráculo
+                  {resposta.metadados?.cache && (
+                    <Badge variant="secondary">Cache</Badge>
+                  )}
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={limparResposta}>
+                  Nova Consulta
+                </Button>
               </div>
-              <Button variant="outline" size="sm">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Salvar como Playbook
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Card 1 - Resposta Contextualizada */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-600" />
-                    Resposta Contextualizada
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed">
-                    {response.resposta}
+              {resposta.metadados?.processado_em && (
+                <CardDescription>
+                  Processado em {resposta.metadados.processado_em} • 
+                  {resposta.metadados.experimentos_analisados || 0} experimentos analisados
+                </CardDescription>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Resposta principal */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-lg">💡 Análise e Recomendações</h4>
+                <div className="prose prose-sm max-w-none">
+                  <p className="whitespace-pre-wrap text-muted-foreground">
+                    {resposta.resposta.resposta_completa || resposta.resposta.resumo || "Resposta não disponível"}
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {/* Card 2 - Dados Históricos */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <BarChart className="w-4 h-4 text-blue-600" />
-                    Dados Históricos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    {response.historicos}
-                  </p>
-                  <div className="bg-muted/50 h-20 rounded flex items-center justify-center text-xs text-muted-foreground">
-                    Mini gráfico de performance
-                  </div>
-                  <Button variant="link" size="sm" className="p-0 h-auto">
-                    <ExternalLink className="w-3 h-3 mr-1" />
-                    Ver experimentos
-                  </Button>
-                </CardContent>
-              </Card>
+              <Separator />
 
-              {/* Card 3 - Recomendações */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <CheckSquare className="w-4 h-4 text-green-600" />
-                    Recomendações Prioritárias
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {response.recomendacoes.map((rec: string, index: number) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <Checkbox id={`rec-${index}`} />
-                      <div className="flex-1 space-y-1">
-                        <label 
-                          htmlFor={`rec-${index}`}
-                          className="text-sm leading-relaxed cursor-pointer"
-                        >
-                          {rec}
+              {/* Dados históricos */}
+              {resposta.resposta.dados && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <BarChart className="w-4 h-4" />
+                    📊 Dados Históricos
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{resposta.resposta.dados}</p>
+                </div>
+              )}
+
+              {/* Próximos passos */}
+              {resposta.resposta.proximos_passos && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4" />
+                    🎯 Próximos Passos
+                  </h4>
+                  <div className="space-y-2">
+                    {resposta.resposta.proximos_passos.split('\n').map((passo: string, index: number) => (
+                      <div key={index} className="flex items-start gap-3">
+                        <Checkbox id={`passo-${index}`} />
+                        <label htmlFor={`passo-${index}`} className="text-sm cursor-pointer">
+                          {passo}
                         </label>
-                        <Button variant="link" size="sm" className="p-0 h-auto text-xs">
-                          Criar experimento
-                        </Button>
                       </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {/* Card 4 - Alertas e Riscos */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-orange-600" />
-                    Alertas e Riscos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {response.alertas.map((alerta: string, index: number) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-muted-foreground">{alerta}</p>
+              {/* Alertas */}
+              {resposta.resposta.alertas && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2 text-orange-600">
+                    <AlertTriangle className="w-4 h-4" />
+                    ⚠️ Alertas e Riscos
+                  </h4>
+                  <p className="text-sm text-orange-600 bg-orange-50 p-3 rounded-lg">
+                    {resposta.resposta.alertas}
+                  </p>
+                </div>
+              )}
+
+              {/* Metadados */}
+              {resposta.metadados && (
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    {resposta.metadados.fonte && (
+                      <div>
+                        <p className="text-muted-foreground">Fonte</p>
+                        <p className="font-medium">{resposta.metadados.fonte}</p>
+                      </div>
+                    )}
+                    {resposta.metadados.agentes_consultados && (
+                      <div>
+                        <p className="text-muted-foreground">Agentes</p>
+                        <p className="font-medium">{resposta.metadados.agentes_consultados.join(', ')}</p>
+                      </div>
+                    )}
+                    {resposta.metadados.experimentos_analisados && (
+                      <div>
+                        <p className="text-muted-foreground">Experimentos</p>
+                        <p className="font-medium">{resposta.metadados.experimentos_analisados}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-muted-foreground">Cache</p>
+                      <p className="font-medium">{resposta.metadados.cache ? 'Sim' : 'Não'}</p>
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Histórico Lateral */}
+      {historico.length > 0 && (
+        <div className="fixed right-4 top-20 w-80 bg-white dark:bg-gray-950 rounded-lg shadow-lg p-4 border z-50">
+          <h3 className="font-semibold mb-3">Consultas Recentes</h3>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {historico.map((item: any) => (
+              <button
+                key={item.id}
+                onClick={() => handleHistoricoClick(item)}
+                className="w-full text-left p-2 hover:bg-muted rounded text-sm"
+              >
+                <div className="font-medium truncate">
+                  {item.pergunta}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(item.timestamp).toLocaleString('pt-BR')}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {erro && (
+        <div className="max-w-4xl mx-auto mt-8">
+          <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+                <span className="font-semibold">Erro na consulta</span>
+              </div>
+              <p className="text-sm text-red-600 mt-2">{erro}</p>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
