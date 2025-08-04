@@ -4,8 +4,20 @@ interface OraculoRequest {
   tipo?: string;
 }
 
+interface N8nResponse {
+  id: string;
+  pergunta: string;
+  pergunta_normalizada: string;
+  resposta: string; // JSON string que precisa ser parseado
+  tipo_consulta: string;
+  tokens_usados: number;
+  tempo_resposta_ms: number | null;
+  hit_count: number;
+  created_at: string;
+  expires_at: string;
+}
+
 interface OraculoResponse {
-  sucesso: boolean;
   pergunta: string;
   contexto?: string;
   resposta: {
@@ -22,6 +34,10 @@ interface OraculoResponse {
     experimentos_analisados?: number;
     cache?: boolean;
     processado_em?: string;
+    id?: string;
+    tokens_usados?: number;
+    tempo_resposta_ms?: number;
+    hit_count?: number;
   };
 }
 
@@ -42,8 +58,48 @@ class OraculoService {
         throw new Error(`Erro HTTP: ${response.status}`);
       }
 
-      const resultado = await response.json();
-      return resultado;
+      const resultado: N8nResponse[] = await response.json();
+      console.log('Resposta do N8N:', resultado);
+
+      // N8N retorna um array, pegamos o primeiro item
+      if (!resultado || !Array.isArray(resultado) || resultado.length === 0) {
+        throw new Error('Resposta vazia ou formato inválido do servidor');
+      }
+
+      const n8nData = resultado[0];
+      
+      // Parse da string JSON na resposta
+      let respostaParsed;
+      try {
+        respostaParsed = JSON.parse(n8nData.resposta);
+      } catch (parseError) {
+        console.error('Erro ao fazer parse da resposta:', parseError);
+        throw new Error('Formato de resposta inválido');
+      }
+
+      // Mapear para o formato esperado pelo componente
+      const oraculoResponse: OraculoResponse = {
+        pergunta: n8nData.pergunta,
+        resposta: {
+          resumo: respostaParsed.resumo,
+          acoes: respostaParsed.acoes,
+          dados: respostaParsed.dados,
+          alertas: respostaParsed.alertas,
+          proximos_passos: respostaParsed.proximos_passos,
+          resposta_completa: respostaParsed.resposta_completa,
+        },
+        metadados: {
+          fonte: 'N8N Webhook',
+          id: n8nData.id,
+          tokens_usados: n8nData.tokens_usados,
+          tempo_resposta_ms: n8nData.tempo_resposta_ms,
+          hit_count: n8nData.hit_count,
+          cache: n8nData.hit_count > 0,
+          processado_em: n8nData.created_at,
+        }
+      };
+
+      return oraculoResponse;
     } catch (error) {
       console.error('Erro ao consultar Oráculo:', error);
       throw error;

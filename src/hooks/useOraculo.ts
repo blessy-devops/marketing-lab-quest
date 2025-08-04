@@ -36,7 +36,7 @@ export function useOraculo() {
       toast.dismiss(toastId);
 
       // Verificar resposta
-      if (resultado.sucesso) {
+      if (resultado && resultado.resposta) {
         setResposta(resultado);
         
         // Salvar no histórico
@@ -49,7 +49,7 @@ export function useOraculo() {
           });
         } else {
           toast.success('Análise concluída!', {
-            description: `${resultado.metadados?.experimentos_analisados || 0} experimentos analisados`
+            description: `Processado em ${resultado.metadados?.tempo_resposta_ms || 0}ms`
           });
         }
 
