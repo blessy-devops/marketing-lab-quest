@@ -1,5 +1,5 @@
 import { useState, FormEvent } from "react";
-import { Brain, BookOpen, Target, Zap, Gift, TrendingUp, CheckSquare, AlertTriangle, BarChart, ExternalLink, Filter, Grid3X3, Bookmark, Play, Loader2, Sparkles } from "lucide-react";
+import { Brain, BookOpen, Target, Zap, Gift, TrendingUp, CheckSquare, AlertTriangle, BarChart, ExternalLink, Filter, Grid3X3, Bookmark, Play, Loader2, Sparkles, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,10 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { useOraculo } from "@/hooks/useOraculo";
 
 export default function Oraculo() {
   const [activeTab, setActiveTab] = useState("consulta-livre");
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
   const [pergunta, setPergunta] = useState("");
   const [contexto, setContexto] = useState("");
   const [tipo, setTipo] = useState("geral");
@@ -626,11 +628,44 @@ export default function Oraculo() {
         <div className="max-w-4xl mx-auto mt-8">
           <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-red-600">
-                <AlertTriangle className="w-5 h-5" />
-                <span className="font-semibold">Erro na consulta</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-red-600">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="font-semibold">Erro na consulta</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowErrorDetails(!showErrorDetails)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  {showErrorDetails ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showErrorDetails ? 'Ocultar' : 'Ver'} detalhes
+                </Button>
               </div>
               <p className="text-sm text-red-600 mt-2">{erro}</p>
+              
+              <Collapsible open={showErrorDetails} onOpenChange={setShowErrorDetails}>
+                <CollapsibleContent className="mt-4">
+                  <Separator className="mb-4" />
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium text-red-700">Resposta do servidor:</Label>
+                      <div className="mt-1 p-3 bg-red-100 dark:bg-red-900/30 rounded border text-xs text-red-800 dark:text-red-300 font-mono overflow-auto max-h-48">
+                        {JSON.stringify(resposta || {}, null, 2)}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-red-700">Última consulta:</Label>
+                      <div className="mt-1 p-3 bg-red-100 dark:bg-red-900/30 rounded border text-xs text-red-800 dark:text-red-300">
+                        <p><strong>Pergunta:</strong> {pergunta}</p>
+                        <p><strong>Contexto:</strong> {contexto || 'Nenhum'}</p>
+                        <p><strong>Tipo:</strong> {tipo}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
         </div>
