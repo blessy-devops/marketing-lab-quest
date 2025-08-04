@@ -1,5 +1,5 @@
 import { useForm, useFieldArray } from "react-hook-form";
-import { ArrowLeft, Save, Play, Plus, X, CalendarIcon, Upload, Link2, RadioIcon, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Save, Play, Plus, X, CalendarIcon, Upload, Link2, RadioIcon, CheckCircle, XCircle, Brain, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,9 @@ import { TipoExperimentoSelector } from "@/components/forms/TipoExperimentoSelec
 import { CanaisSelector } from "@/components/forms/CanaisSelector";
 import { CANAIS_OPTIONS } from "@/constants/canais";
 import { useAuth } from "@/hooks/useAuth";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 
 interface FormData {
   tipoCadastro: 'futuro' | 'realizado';
@@ -61,6 +64,10 @@ interface FormData {
   causas?: string;
   acoes?: string;
   aprendizados?: string;
+  // Configurações de IA
+  base_conhecimento?: boolean;
+  gerar_playbook?: boolean;
+  tags?: string[];
 }
 
 // Remove old static arrays - now using dynamic data
@@ -74,6 +81,8 @@ export default function NewExperiment() {
   const navigate = useNavigate();
   const { hasRole, loading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAdvancedConfigOpen, setIsAdvancedConfigOpen] = useState(false);
+  const [tagInput, setTagInput] = useState("");
 
   // Aguardar o carregamento antes de verificar permissões
   if (loading) {
@@ -122,7 +131,10 @@ export default function NewExperiment() {
       fatos: "",
       causas: "",
       acoes: "",
-      aprendizados: ""
+      aprendizados: "",
+      base_conhecimento: true,
+      gerar_playbook: false,
+      tags: []
     }
   });
 
@@ -138,6 +150,15 @@ export default function NewExperiment() {
 
   const tipoCadastro = form.watch('tipoCadastro');
   const canaisSelecionados = form.watch('canais');
+  const status = form.watch('status');
+  const tags = form.watch('tags') || [];
+
+  // Sugestões de tags
+  const tagSuggestions = [
+    "promoção", "lançamento", "email", "urgência", "black-friday", 
+    "gap", "teste-preco", "frete-gratis", "a-b-test", "conversao",
+    "checkout", "cta", "landing-page", "mobile", "desktop"
+  ];
 
   // Ajustar status baseado no tipo de cadastro
   useEffect(() => {
@@ -196,7 +217,9 @@ export default function NewExperiment() {
         // Store tipo_experimento_id in tipo field for now
         tipo_experimento_id: data.tipo_experimento_id,
         subtipo_experimento_id: data.subtipo_experimento_id,
-        subtipo_customizado: data.subtipo_customizado
+        subtipo_customizado: data.subtipo_customizado,
+        base_conhecimento: data.base_conhecimento,
+        tags: data.tags
       };
 
       const { data: novoExperimento, error: experimentoError } = await supabase
@@ -278,6 +301,24 @@ export default function NewExperiment() {
 
   const handleSubmit = () => {
     form.handleSubmit(onSubmit)();
+  };
+
+  const addTag = (tag: string) => {
+    if (tag && !tags.includes(tag) && tags.length < 5) {
+      form.setValue('tags', [...tags, tag]);
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    form.setValue('tags', tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      addTag(tagInput.trim());
+    }
   };
 
   return (
@@ -533,6 +574,213 @@ export default function NewExperiment() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Configurações Avançadas */}
+          <Card>
+            <Collapsible open={isAdvancedConfigOpen} onOpenChange={setIsAdvancedConfigOpen}>
+              <CardHeader>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="flex items-center justify-between w-full p-0 h-auto">
+                    <div className="text-left">
+                      <CardTitle className="flex items-center gap-2">
+                        <Brain className="w-5 h-5 text-blue-600" />
+                        Configurações Avançadas
+                      </CardTitle>
+                      <CardDescription>
+                        Configure integrações com IA e tags de categorização
+                      </CardDescription>
+                    </div>
+                    {isAdvancedConfigOpen ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent className="space-y-6">
+                  <TooltipProvider>
+                    {/* Configurações de IA */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
+                        Configurações de IA
+                      </h4>
+                      
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {/* Base de Conhecimento */}
+                        <FormField
+                          control={form.control}
+                          name="base_conhecimento"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="flex items-center gap-2">
+                                  <Brain className="w-4 h-4 text-blue-600" />
+                                  Incluir na base de conhecimento da IA
+                                </FormLabel>
+                                <FormDescription>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="text-xs cursor-help border-b border-dotted">
+                                        Este experimento será usado pelo Oráculo para gerar insights
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Experimentos marcados são analisados pela IA para identificar padrões e gerar insights automaticamente</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Gerar Playbook */}
+                        <FormField
+                          control={form.control}
+                          name="gerar_playbook"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  disabled={status !== 'concluido'}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className={cn(
+                                  "flex items-center gap-2",
+                                  status !== 'concluido' && "text-muted-foreground"
+                                )}>
+                                  <BookOpen className="w-4 h-4 text-green-600" />
+                                  Gerar playbook deste experimento
+                                </FormLabel>
+                                <FormDescription>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="text-xs cursor-help border-b border-dotted">
+                                        {status !== 'concluido' 
+                                          ? "Disponível apenas para experimentos concluídos"
+                                          : "Transformar em playbook reutilizável"
+                                        }
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Cria um modelo reutilizável baseado neste experimento bem-sucedido</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
+                        Tags de Categorização
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="tags"
+                          render={() => (
+                            <FormItem>
+                              <FormLabel>Tags do Experimento</FormLabel>
+                              <div className="space-y-3">
+                                {/* Tags existentes */}
+                                {tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {tags.map((tag, index) => (
+                                      <Badge 
+                                        key={index} 
+                                        variant="secondary" 
+                                        className="flex items-center gap-1"
+                                      >
+                                        #{tag}
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                                          onClick={() => removeTag(tag)}
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </Button>
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Input para nova tag */}
+                                <div className="flex gap-2">
+                                  <Input
+                                    placeholder="Adicione tags: promoção, urgência, lançamento..."
+                                    value={tagInput}
+                                    onChange={(e) => setTagInput(e.target.value)}
+                                    onKeyDown={handleTagInputKeyDown}
+                                    disabled={tags.length >= 5}
+                                    className="flex-1"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => addTag(tagInput.trim())}
+                                    disabled={!tagInput.trim() || tags.length >= 5}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+
+                                {/* Sugestões de tags */}
+                                <div className="space-y-2">
+                                  <p className="text-xs text-muted-foreground">Sugestões:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {tagSuggestions
+                                      .filter(suggestion => !tags.includes(suggestion))
+                                      .slice(0, 8)
+                                      .map((suggestion) => (
+                                        <Button
+                                          key={suggestion}
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-xs h-6 px-2"
+                                          onClick={() => addTag(suggestion)}
+                                          disabled={tags.length >= 5}
+                                        >
+                                          #{suggestion}
+                                        </Button>
+                                      ))}
+                                  </div>
+                                </div>
+
+                                <FormDescription className="text-xs">
+                                  Máximo 5 tags por experimento. Use tags para categorizar e encontrar experimentos similares.
+                                </FormDescription>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </TooltipProvider>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
 
           {/* Métricas Esperadas */}
           <Card>
