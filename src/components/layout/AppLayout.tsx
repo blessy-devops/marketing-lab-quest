@@ -18,7 +18,11 @@ export function AppLayout({ children }: AppLayoutProps) {
   useGlobalShortcuts();
   
   return (
-    <SidebarProvider>
+    <SidebarProvider 
+      defaultOpen={true}
+      open={undefined}
+      onOpenChange={undefined}
+    >
       <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/30">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
