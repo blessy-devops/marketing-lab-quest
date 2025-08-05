@@ -271,6 +271,7 @@ export type Database = {
           created_at: string
           data_fim: string | null
           data_inicio: string | null
+          experimento_sucesso: boolean | null
           hipotese: string | null
           id: string
           nome: string
@@ -289,6 +290,7 @@ export type Database = {
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
+          experimento_sucesso?: boolean | null
           hipotese?: string | null
           id?: string
           nome: string
@@ -307,6 +309,7 @@ export type Database = {
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
+          experimento_sucesso?: boolean | null
           hipotese?: string | null
           id?: string
           nome?: string
@@ -685,10 +688,13 @@ export type Database = {
           causas: string | null
           created_at: string
           experimento_id: string
+          experimento_sucesso: boolean | null
           fatos: string | null
           id: string
+          matriz_ice: Json | null
           roi: number | null
           sucesso: boolean | null
+          tags: string[] | null
           updated_at: string
         }
         Insert: {
@@ -697,10 +703,13 @@ export type Database = {
           causas?: string | null
           created_at?: string
           experimento_id: string
+          experimento_sucesso?: boolean | null
           fatos?: string | null
           id?: string
+          matriz_ice?: Json | null
           roi?: number | null
           sucesso?: boolean | null
+          tags?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -709,10 +718,13 @@ export type Database = {
           causas?: string | null
           created_at?: string
           experimento_id?: string
+          experimento_sucesso?: boolean | null
           fatos?: string | null
           id?: string
+          matriz_ice?: Json | null
           roi?: number | null
           sucesso?: boolean | null
+          tags?: string[] | null
           updated_at?: string
         }
         Relationships: [
