@@ -151,7 +151,7 @@ export default function ExperimentsList() {
   const filteredExperiments = (experimentos || []).filter((exp: ExperimentoExtended) => {
     const matchesSearch = exp.nome.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedTypes.length === 0 || (exp.tipo && selectedTypes.includes(exp.tipo));
-    const matchesStatus = !selectedStatus || exp.status === selectedStatus;
+    const matchesStatus = !selectedStatus || selectedStatus === "all" || exp.status === selectedStatus;
     const matchesChannel = selectedChannels.length === 0 || 
       (exp.canais && exp.canais.some(canal => selectedChannels.includes(canal)));
     
@@ -452,12 +452,12 @@ export default function ExperimentsList() {
             {/* Status Filter */}
             <div>
               <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value === "todos" ? "" : value)}>
+              <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {STATUS_OPTIONS.map((status) => (
                     <SelectItem key={status.value} value={status.value}>
                       {status.label}
@@ -566,12 +566,12 @@ export default function ExperimentsList() {
             {/* ROI Filter */}
             <div>
               <label className="text-sm font-medium mb-2 block">ROI</label>
-              <Select value={selectedROI} onValueChange={setSelectedROI}>
+              <Select value={selectedROI} onValueChange={(value) => setSelectedROI(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {ROI_RANGES.map((range) => (
                     <SelectItem key={range.value} value={range.value}>
                       {range.label}
@@ -584,12 +584,12 @@ export default function ExperimentsList() {
             {/* ICE Score Filter */}
             <div>
               <label className="text-sm font-medium mb-2 block">Score ICE</label>
-              <Select value={selectedICE} onValueChange={setSelectedICE}>
+              <Select value={selectedICE} onValueChange={(value) => setSelectedICE(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {ICE_RANGES.map((range) => (
                     <SelectItem key={range.value} value={range.value}>
                       {range.label}
@@ -602,12 +602,12 @@ export default function ExperimentsList() {
             {/* Duration Filter */}
             <div>
               <label className="text-sm font-medium mb-2 block">Duração</label>
-              <Select value={selectedDuration} onValueChange={setSelectedDuration}>
+              <Select value={selectedDuration} onValueChange={(value) => setSelectedDuration(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
                   {DURATION_RANGES.map((range) => (
                     <SelectItem key={range.value} value={range.value}>
                       {range.label}
@@ -620,12 +620,12 @@ export default function ExperimentsList() {
             {/* Results Filter */}
             <div>
               <label className="text-sm font-medium mb-2 block">Resultados</label>
-              <Select value={hasResults} onValueChange={setHasResults}>
+              <Select value={hasResults} onValueChange={(value) => setHasResults(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="with">Com resultados</SelectItem>
                   <SelectItem value="without">Sem resultados</SelectItem>
                 </SelectContent>
