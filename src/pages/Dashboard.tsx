@@ -1,11 +1,11 @@
 import React from "react";
-import { BarChart3, Beaker, TrendingUp, Users, Calendar, Target, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { BarChart3, Beaker, Users, Calendar, Target, Clock, AlertCircle, CheckCircle, TrendingUp, Hexagon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { RestrictedButton } from "@/components/ui/restricted-button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-// import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { useDashboardMetrics, useExperimentosComResultados } from "@/hooks/useSupabaseData";
 import { Link } from "react-router-dom";
 import { format, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
@@ -90,6 +90,37 @@ export default function Dashboard() {
     return experimentosData.filter(exp => exp.status === 'em_andamento');
   }, [experimentosData]);
 
+  // Dados do calendário - experimentos com datas
+  const calendarEvents = React.useMemo(() => {
+    return experimentosData.map(exp => ({
+      id: exp.id,
+      title: exp.nome,
+      start: new Date(exp.data_inicio || exp.created_at),
+      end: exp.data_fim ? new Date(exp.data_fim) : new Date(exp.data_inicio || exp.created_at),
+      resource: {
+        status: exp.status,
+        tipo: exp.tipo,
+        responsavel: exp.responsavel
+      }
+    }));
+  }, [experimentosData]);
+
+  // Dados do gráfico radar - tipos de experimentos
+  const radarData = React.useMemo(() => {
+    const tiposCounts: { [key: string]: number } = {};
+    
+    experimentosData.forEach(exp => {
+      const tipo = getTipoLabel(exp.tipo);
+      tiposCounts[tipo] = (tiposCounts[tipo] || 0) + 1;
+    });
+
+    return Object.entries(tiposCounts).map(([tipo, count]) => ({
+      tipo,
+      quantidade: count,
+      fullMark: Math.max(...Object.values(tiposCounts))
+    }));
+  }, [experimentosData]);
+
   // Top 3 aprendizados recentes
   const aprendizadosRecentes = React.useMemo(() => {
     return experimentosData
@@ -142,7 +173,7 @@ export default function Dashboard() {
       </div>
 
       {/* Métricas principais */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -158,27 +189,6 @@ export default function Dashboard() {
                 <div className="text-2xl font-bold">{metrics.totalExperimentos}</div>
                 <p className="text-xs text-muted-foreground">
                   experimentos realizados
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Taxa de Sucesso
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            {metricsLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{metrics.taxaSucesso}%</div>
-                <p className="text-xs text-muted-foreground">
-                  de experimentos bem-sucedidos
                 </p>
               </>
             )}
@@ -205,127 +215,137 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              ROI Médio
-            </CardTitle>
-            <BarChart3 className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            {metricsLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{metrics.roiMedio}%</div>
-                <p className="text-xs text-muted-foreground">
-                  retorno sobre investimento
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Evolução mensal simplificada */}
-        <Card className="lg:col-span-2">
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Evolução mensal como tabela simples */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
-              Evolução Mensal de Experimentos
+              Últimos 6 Meses
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dataLoading ? (
+              <Skeleton className="h-32 w-full" />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mês</TableHead>
+                    <TableHead className="text-right">Experimentos</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {chartData.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{item.month}</TableCell>
+                      <TableCell className="text-right">{item.experimentos}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Calendário de experimentos */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Calendário de Experimentos
             </CardTitle>
             <CardDescription>
-              Número de experimentos criados nos últimos 6 meses
+              Visualização temporal dos experimentos
             </CardDescription>
           </CardHeader>
           <CardContent>
             {dataLoading ? (
               <Skeleton className="h-64 w-full" />
             ) : (
-              <div className="space-y-4">
-                {chartData.map((item, index) => (
-                  <div key={index} className="flex items-center gap-4">
-                    <div className="w-12 text-sm font-medium text-center">
-                      {item.month}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-muted rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full transition-all duration-300"
-                            style={{ 
-                              width: `${Math.max(10, (item.experimentos / Math.max(...chartData.map(d => d.experimentos))) * 100)}%` 
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium min-w-[2rem]">
-                          {item.experimentos}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Últimos experimentos concluídos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" />
-              Experimentos Concluídos
-            </CardTitle>
-            <CardDescription>
-              Últimos 5 experimentos finalizados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {dataLoading ? (
               <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : experimentosConcluidos.length > 0 ? (
-              <div className="space-y-3">
-                {experimentosConcluidos.map((exp) => (
+                {calendarEvents.slice(0, 6).map((event) => (
                   <Link
-                    key={exp.id}
-                    to={`/experimentos/${exp.id}`}
+                    key={event.id}
+                    to={`/experimentos/${event.id}`}
                     className="block p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm">{exp.nome}</h4>
+                      <h4 className="font-medium text-sm">{event.title}</h4>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {getTipoLabel(exp.tipo)}
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${getStatusColor(event.resource.status)}`}
+                        >
+                          {getStatusIcon(event.resource.status)}
+                          {event.resource.status === 'em_andamento' ? 'Ativo' : 
+                           event.resource.status === 'concluido' ? 'Concluído' : 'Planejado'}
                         </Badge>
-                        {exp.resultado?.sucesso !== null && exp.resultado?.sucesso !== undefined && (
-                          <Badge variant={exp.resultado.sucesso ? "default" : "destructive"} className="text-xs">
-                            {exp.resultado.sucesso ? "Sucesso" : "Falha"}
-                          </Badge>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>
-                        ROI: {exp.resultado?.roi ? `${exp.resultado.roi}%` : "N/A"}
+                        {getTipoLabel(event.resource.tipo)}
                       </span>
                       <span>
-                        {format(new Date(exp.created_at), 'dd/MM/yyyy')}
+                        {format(event.start, 'dd/MM/yyyy')}
                       </span>
                     </div>
                   </Link>
                 ))}
+                {calendarEvents.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="w-8 h-8 mx-auto mb-2" />
+                    <p>Nenhum experimento agendado</p>
+                  </div>
+                )}
               </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Gráfico radar de tipos de experimentos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Hexagon className="w-5 h-5" />
+              Tipos de Experimentos
+            </CardTitle>
+            <CardDescription>
+              Distribuição por categoria
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {dataLoading ? (
+              <Skeleton className="h-64 w-full" />
+            ) : radarData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <RadarChart data={radarData}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="tipo" tick={{ fontSize: 12 }} />
+                  <PolarRadiusAxis 
+                    angle={90} 
+                    domain={[0, 'dataMax']} 
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Radar
+                    name="Quantidade"
+                    dataKey="quantidade"
+                    stroke="hsl(var(--primary))"
+                    fill="hsl(var(--primary))"
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2" />
-                <p>Nenhum experimento concluído ainda</p>
+                <Hexagon className="w-8 h-8 mx-auto mb-2" />
+                <p>Nenhum dado disponível</p>
               </div>
             )}
           </CardContent>
