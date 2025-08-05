@@ -1,10 +1,8 @@
 import { useState, FormEvent } from "react";
-import { Brain, BookOpen, Target, Zap, Gift, TrendingUp, CheckSquare, AlertTriangle, BarChart, ExternalLink, Filter, Grid3X3, Bookmark, Play, Loader2, Sparkles, Eye, EyeOff } from "lucide-react";
+import { Brain, CheckSquare, AlertTriangle, Loader2, Sparkles, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +13,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useOraculo } from "@/hooks/useOraculo";
 
 export default function Oraculo() {
-  const [activeTab, setActiveTab] = useState("consulta-livre");
   const [showErrorDetails, setShowErrorDetails] = useState(false);
   const [pergunta, setPergunta] = useState("");
   const [contexto, setContexto] = useState("");
@@ -46,33 +43,6 @@ export default function Oraculo() {
     { id: "outras", label: "Outras", emoji: "🔧" }
   ];
 
-  // Playbooks mockados
-  const playbooks = [
-    {
-      id: 1,
-      titulo: "Gap Recovery 72h",
-      tags: ["urgência", "gap", "email"],
-      roi: "234%",
-      usos: 12,
-      tipo: "Gap Recovery"
-    },
-    {
-      id: 2,
-      titulo: "Black Friday Playbook",
-      tags: ["sazonal", "promoção", "conversão"],
-      roi: "189%",
-      usos: 8,
-      tipo: "Campanha Sazonal"
-    },
-    {
-      id: 3,
-      titulo: "Lançamento Premium",
-      tags: ["lançamento", "premium", "ticket-alto"],
-      roi: "156%",
-      usos: 5,
-      tipo: "Lançamento"
-    }
-  ];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -119,21 +89,8 @@ export default function Oraculo() {
         </div>
       </div>
 
-      {/* Tabs de Navegação */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
-          <TabsTrigger value="consulta-livre" className="flex items-center gap-2">
-            <Brain className="w-4 h-4" />
-            🔮 Consulta Livre
-          </TabsTrigger>
-          <TabsTrigger value="playbooks" className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4" />
-            📚 Playbooks
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Tab Consulta Livre */}
-        <TabsContent value="consulta-livre" className="space-y-6">
+      {/* Interface Principal - Consulta Livre */}
+      <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -270,80 +227,7 @@ export default function Oraculo() {
             </form>
           </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Tab Playbooks */}
-        <TabsContent value="playbooks" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Biblioteca de Playbooks</h3>
-              <p className="text-sm text-muted-foreground">
-                Playbooks testados e validados pela IA
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-              </Button>
-              <Button variant="outline" size="sm">
-                <Grid3X3 className="w-4 h-4 mr-2" />
-                Visualização
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {playbooks.map((playbook) => (
-              <Card key={playbook.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-base">{playbook.titulo}</CardTitle>
-                      <Badge variant="secondary" className="mt-1">
-                        {playbook.tipo}
-                      </Badge>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <Bookmark className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-1">
-                    {playbook.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">ROI médio</p>
-                      <p className="font-semibold text-green-600">{playbook.roi}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Utilizado</p>
-                      <p className="font-semibold">{playbook.usos}x</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button size="sm" className="flex-1">
-                      <Play className="w-3 h-3 mr-1" />
-                      Usar como base
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
 
       {/* Área de Resposta */}
       {resposta && !loading && (
@@ -353,7 +237,7 @@ export default function Oraculo() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="w-5 h-5 text-purple-600" />
-                  Resposta do Oráculo
+                  📋 Análise e Recomendações
                   {resposta.metadados?.cache && (
                     <Badge variant="secondary">Cache</Badge>
                   )}
@@ -370,65 +254,103 @@ export default function Oraculo() {
               )}
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Resposta principal */}
+              {/* Análise Principal */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-lg">💡 Análise e Recomendações</h4>
                 <div className="prose prose-sm max-w-none">
-                  <p className="whitespace-pre-wrap text-muted-foreground">
+                  <div className="whitespace-pre-wrap text-muted-foreground border-l-4 border-purple-500 pl-4 bg-purple-50 dark:bg-purple-950/20 p-4 rounded-r-lg">
                     {resposta.resposta.resposta_completa || resposta.resposta.resumo || "Resposta não disponível"}
-                  </p>
+                  </div>
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Dados históricos */}
-              {resposta.resposta.dados && (
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <BarChart className="w-4 h-4" />
-                    📊 Dados Históricos
+              {/* Ações Recomendadas */}
+              {resposta.resposta.acoes && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg flex items-center gap-2">
+                    🎯 AÇÕES RECOMENDADAS
                   </h4>
-                  <p className="text-sm text-muted-foreground">{resposta.resposta.dados}</p>
+                  <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border-l-4 border-blue-500">
+                    <div className="whitespace-pre-wrap text-sm">
+                      {resposta.resposta.acoes}
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Próximos passos */}
-              {resposta.resposta.proximos_passos && (
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <CheckSquare className="w-4 h-4" />
-                    🎯 Próximos Passos
+              {/* Dados e Evidências */}
+              {resposta.resposta.dados && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg flex items-center gap-2">
+                    📊 BASEADO EM EVIDÊNCIAS
                   </h4>
-                  <div className="space-y-2">
-                    {resposta.resposta.proximos_passos.split('\n').map((passo: string, index: number) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <Checkbox id={`passo-${index}`} />
-                        <label htmlFor={`passo-${index}`} className="text-sm cursor-pointer">
-                          {passo}
-                        </label>
+                  <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border-l-4 border-green-500">
+                    <div className="whitespace-pre-wrap text-sm">
+                      {resposta.resposta.dados}
+                    </div>
+                    {/* Mock experiment links - replace with real data */}
+                    <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-800">
+                      <p className="text-xs text-muted-foreground mb-2">Experimentos similares analisados:</p>
+                      <div className="space-y-1">
+                        <button 
+                          onClick={() => window.open('/experimentos/mock-1', '_blank')}
+                          className="block text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                          title="Ver experimento completo"
+                        >
+                          • Email Recovery Campaign - ROI: 245% ↗️
+                        </button>
+                        <button 
+                          onClick={() => window.open('/experimentos/mock-2', '_blank')}
+                          className="block text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                          title="Ver experimento completo"
+                        >
+                          • Checkout Optimization - ROI: 178% ↗️
+                        </button>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Alertas */}
               {resposta.resposta.alertas && (
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2 text-orange-600">
-                    <AlertTriangle className="w-4 h-4" />
-                    ⚠️ Alertas e Riscos
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg flex items-center gap-2 text-orange-600">
+                    ⚠️ PONTOS DE ATENÇÃO
                   </h4>
-                  <p className="text-sm text-orange-600 bg-orange-50 p-3 rounded-lg">
-                    {resposta.resposta.alertas}
-                  </p>
+                  <div className="bg-orange-50 dark:bg-orange-950/20 p-4 rounded-lg border-l-4 border-orange-500">
+                    <div className="whitespace-pre-wrap text-sm text-orange-800 dark:text-orange-200">
+                      {resposta.resposta.alertas}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Próximos passos */}
+              {resposta.resposta.proximos_passos && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg flex items-center gap-2">
+                    🚀 PRÓXIMOS PASSOS IMEDIATOS
+                  </h4>
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 p-4 rounded-lg border-l-4 border-gradient-to-b from-purple-500 to-blue-500">
+                    <div className="space-y-2">
+                      {resposta.resposta.proximos_passos.split('\n').filter(Boolean).map((passo: string, index: number) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center text-xs font-semibold text-purple-600 dark:text-purple-300">
+                            {index + 1}
+                          </div>
+                          <div className="text-sm">
+                            {passo.replace(/^\d+\.\s*/, '')}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Metadados */}
               {resposta.metadados && (
-                <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="bg-muted/30 p-4 rounded-lg border">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     {resposta.metadados.fonte && (
                       <div>
@@ -436,10 +358,10 @@ export default function Oraculo() {
                         <p className="font-medium">{resposta.metadados.fonte}</p>
                       </div>
                     )}
-                    {resposta.metadados.agentes_consultados && (
+                    {resposta.metadados.tokens_usados && (
                       <div>
-                        <p className="text-muted-foreground">Agentes</p>
-                        <p className="font-medium">{resposta.metadados.agentes_consultados.join(', ')}</p>
+                        <p className="text-muted-foreground">Tokens</p>
+                        <p className="font-medium">{resposta.metadados.tokens_usados}</p>
                       </div>
                     )}
                     {resposta.metadados.experimentos_analisados && (

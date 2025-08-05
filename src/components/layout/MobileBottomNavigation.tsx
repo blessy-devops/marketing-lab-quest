@@ -1,12 +1,13 @@
-import { Home, TestTube, BarChart3, Image, FileText } from "lucide-react";
+import { Home, TestTube, BarChart3, Image, FileText, Brain, BookOpen } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
   { to: "/", icon: Home, label: "Início" },
   { to: "/experimentos", icon: TestTube, label: "Experimentos" },
+  { to: "/oraculo", icon: Brain, label: "Oráculo" },
+  { to: "/playbooks", icon: BookOpen, label: "Playbooks" },
   { to: "/galeria", icon: Image, label: "Galeria" },
-  { to: "/relatorios", icon: FileText, label: "Relatórios" },
 ];
 
 export function MobileBottomNavigation() {

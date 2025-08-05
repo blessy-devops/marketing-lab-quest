@@ -21,6 +21,7 @@ const EditExperiment = lazy(() => import("@/pages/EditExperiment"));
 const Reports = lazy(() => import("@/pages/Reports"));
 const Gallery = lazy(() => import("@/pages/Gallery"));
 const Oraculo = lazy(() => import("@/pages/Oraculo"));
+const Playbooks = lazy(() => import("@/pages/Playbooks"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const TiposExperimento = lazy(() => import("@/pages/admin/TiposExperimento"));
 const Profile = lazy(() => import("@/pages/Profile"));
@@ -150,6 +151,14 @@ function App() {
                     element={
                       <LazyWrapper>
                         <Oraculo />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="playbooks"
+                    element={
+                      <LazyWrapper>
+                        <Playbooks />
                       </LazyWrapper>
                     }
                   />

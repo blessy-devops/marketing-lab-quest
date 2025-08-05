@@ -7,7 +7,8 @@ import {
   Settings,
   Users,
   LogOut,
-  Brain
+  Brain,
+  BookOpen
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -27,6 +28,7 @@ const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Experimentos", url: "/experimentos", icon: Beaker },
   { title: "Oráculo", url: "/oraculo", icon: Brain },
+  { title: "Playbooks", url: "/playbooks", icon: BookOpen },
 ];
 
 const analyticsItems = [
