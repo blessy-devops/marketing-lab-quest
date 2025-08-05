@@ -12,9 +12,11 @@ import { useTheme } from "@/hooks/useTheme";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Trash2, Edit3 } from "lucide-react";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -41,6 +43,11 @@ export default function Settings() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  // Estados para gerenciamento de usuários
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
 
   const getThemeIcon = () => {
     switch (theme) {
@@ -181,6 +188,118 @@ export default function Settings() {
       });
     }
   };
+
+  // Função para buscar usuários
+  const loadUsers = async () => {
+    if (userRole !== 'admin') return;
+    
+    setIsLoadingUsers(true);
+    try {
+      const { data: usersData, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_roles!inner(role)
+        `)
+        .eq('ativo', true);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os usuários.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setUsers(usersData || []);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao carregar usuários.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  // Função para atualizar role do usuário
+  const updateUserRole = async (userId: string, newRole: 'admin' | 'editor' | 'viewer') => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: newRole })
+        .eq('user_id', userId);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível atualizar o papel do usuário.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Atualizar lista local
+      setUsers(prev => prev.map(user => 
+        user.user_id === userId 
+          ? { ...user, user_roles: { role: newRole } }
+          : user
+      ));
+
+      toast({
+        title: "Sucesso",
+        description: "Papel do usuário atualizado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao atualizar papel do usuário.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para desativar usuário
+  const deactivateUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ ativo: false })
+        .eq('user_id', userId);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível desativar o usuário.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Remover da lista local
+      setUsers(prev => prev.filter(user => user.user_id !== userId));
+
+      toast({
+        title: "Sucesso",
+        description: "Usuário desativado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao desativar usuário.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Carregar usuários quando for admin
+  useEffect(() => {
+    if (userRole === 'admin') {
+      loadUsers();
+    }
+  }, [userRole]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -465,20 +584,136 @@ export default function Settings() {
           </Card>
 
           {userRole === 'admin' && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Send className="h-4 w-4 text-primary" />
+            <>
+              {/* Lista de Usuários */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle>Usuários do Sistema</CardTitle>
+                      <CardDescription>
+                        Gerencie os usuários e suas permissões
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle>Convidar Novo Membro</CardTitle>
-                    <CardDescription>
-                      Envie convites para novos usuários ingressarem no sistema
-                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingUsers ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : users.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum usuário encontrado</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Usuário</TableHead>
+                          <TableHead>Departamento</TableHead>
+                          <TableHead>Papel</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={user.avatar_url || ''} />
+                                  <AvatarFallback>
+                                    {user.nome_completo?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{user.nome_completo}</p>
+                                  <p className="text-sm text-muted-foreground">{user.cargo}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {user.departamento && (
+                                <Badge variant="outline">{user.departamento}</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={getRoleColor(user.user_roles?.role)}>
+                                  {getRoleLabel(user.user_roles?.role)}
+                                </Badge>
+                                {editingUser?.id === user.id ? (
+                                  <Select
+                                    value={user.user_roles?.role}
+                                    onValueChange={(newRole: 'admin' | 'editor' | 'viewer') => {
+                                      updateUserRole(user.user_id, newRole);
+                                      setEditingUser(null);
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="viewer">Visualizador</SelectItem>
+                                      <SelectItem value="editor">Editor</SelectItem>
+                                      <SelectItem value="admin">Administrador</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : null}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {user.user_id !== user?.id && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setEditingUser(user)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Edit3 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => deactivateUser(user.user_id)}
+                                      className="h-8 w-8 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Convidar Novo Membro */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Send className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle>Convidar Novo Membro</CardTitle>
+                      <CardDescription>
+                        Envie convites para novos usuários ingressarem no sistema
+                      </CardDescription>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4">
                   <div className="space-y-2">
@@ -556,6 +791,7 @@ export default function Settings() {
                 </Button>
               </CardContent>
             </Card>
+            </>
           )}
         </TabsContent>
       </Tabs>
