@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { ArrowUpDown, Calendar, Eye, MoreHorizontal, Plus, Search, Edit2, Trash2, Filter, Grid, List, X, ChevronDown, CalendarIcon, Trophy, Star } from 'lucide-react';
+import { ArrowUpDown, Calendar, Eye, MoreHorizontal, Plus, Search, Edit2, Trash2, Filter, Grid, List, X, ChevronDown, CalendarIcon, Trophy, Star, Copy } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useExperimentos } from '@/hooks/useSupabaseData';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -21,6 +21,8 @@ import { DateRange } from 'react-day-picker';
 import { CANAIS, CANAIS_OPTIONS, getChannelsByCategory, getChannelIcon } from "@/constants/canais";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useDuplicateExperiment } from '@/hooks/useDuplicateExperiment';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ExperimentoExtended {
   id: string;
@@ -128,6 +130,7 @@ export default function ExperimentsList() {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [openChannelCategories, setOpenChannelCategories] = useState<Record<string, boolean>>({});
   const [typeComboboxOpen, setTypeComboboxOpen] = useState(false);
+  const { duplicateExperiment, duplicating } = useDuplicateExperiment();
 
   // Helper functions for filtering
   const getROIFromExperiment = (exp: ExperimentoExtended) => {
@@ -327,6 +330,10 @@ export default function ExperimentsList() {
       // TODO: Implementar lógica de exclusão
       console.log('Excluir experimento:', experimentId);
     }
+  };
+
+  const handleDuplicate = async (experimentId: string) => {
+    await duplicateExperiment(experimentId);
   };
 
   const formatDate = (dateString?: string) => {
@@ -666,123 +673,169 @@ export default function ExperimentsList() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {viewMode === 'table' ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Button variant="ghost" onClick={() => handleSort('nome')}>
-                      Nome
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button variant="ghost" onClick={() => handleSort('tipo')}>
-                      Tipo
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button variant="ghost" onClick={() => handleSort('status')}>
-                      Status
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button variant="ghost" onClick={() => handleSort('responsavel')}>
-                      Responsável
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button variant="ghost" onClick={() => handleSort('data_inicio')}>
-                      Período
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedExperiments.map((exp: ExperimentoExtended) => (
-                  <TableRow key={exp.id}>
-                    <TableCell>
-                      <Link
-                        to={`/experimentos/${exp.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {exp.nome}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getTypeColor(exp.tipo)}>
-                        {exp.tipo || 'N/A'}
-                      </Badge>
-                    </TableCell>
-                     <TableCell>
-                       {(() => {
-                         const statusBadge = getStatusBadge(exp.status);
-                         return (
-                           <Badge variant={statusBadge.variant} className={statusBadge.color}>
-                             {statusBadge.label}
-                           </Badge>
-                         );
-                       })()}
-                     </TableCell>
-                    <TableCell>{exp.responsavel || 'N/A'}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{formatDate(exp.data_inicio)}</div>
-                        <div className="text-muted-foreground">{formatDate(exp.data_fim)}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/experimentos/${exp.id}`}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Visualizar
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(exp.id)}>
-                            <Edit2 className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive" 
-                            onClick={() => handleDelete(exp.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          <TooltipProvider>
+            {viewMode === 'table' ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort('nome')}>
+                        Nome
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort('tipo')}>
+                        Tipo
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort('status')}>
+                        Status
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort('experimento_sucesso')}>
+                        Sucesso
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort('responsavel')}>
+                        Responsável
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort('data_inicio')}>
+                        Período
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {paginatedExperiments.map((exp: ExperimentoExtended) => (
-                <Card key={exp.id} className="hover:shadow-md transition-shadow relative">
-                  {/* Status Badge - Canto Superior Direito */}
-                  <div className="absolute top-2 right-2 z-10">
-                    {(() => {
-                      const statusBadge = getStatusBadge(exp.status);
-                      return (
-                        <Badge variant={statusBadge.variant} className={statusBadge.color}>
-                          {statusBadge.label}
+                </TableHeader>
+                <TableBody>
+                  {paginatedExperiments.map((exp: ExperimentoExtended) => (
+                    <TableRow 
+                      key={exp.id}
+                      className={cn(
+                        exp.experimento_sucesso && "border-l-4 border-l-yellow-400 bg-yellow-50/30"
+                      )}
+                    >
+                      <TableCell>
+                        <Link
+                          to={`/experimentos/${exp.id}`}
+                          className="font-medium hover:underline flex items-center gap-2"
+                        >
+                          {exp.experimento_sucesso && (
+                            <Trophy className="h-4 w-4 text-yellow-500" />
+                          )}
+                          {exp.nome}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getTypeColor(exp.tipo)}>
+                          {exp.tipo || 'N/A'}
                         </Badge>
-                      );
-                    })()}
-                  </div>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const statusBadge = getStatusBadge(exp.status);
+                          return (
+                            <Badge variant={statusBadge.variant} className={statusBadge.color}>
+                              {statusBadge.label}
+                            </Badge>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {exp.experimento_sucesso ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center justify-center">
+                                <Trophy className="h-5 w-5 text-yellow-500" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Experimento de Sucesso</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <span className="text-muted-foreground">-</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>{exp.responsavel || 'N/A'}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{formatDate(exp.data_inicio)}</div>
+                          <div className="text-muted-foreground">{formatDate(exp.data_fim)}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link to={`/experimentos/${exp.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Visualizar
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(exp.id)}>
+                              <Edit2 className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDuplicate(exp.id)}
+                              disabled={duplicating}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              Duplicar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive" 
+                              onClick={() => handleDelete(exp.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedExperiments.map((exp: ExperimentoExtended) => (
+                  <Card 
+                    key={exp.id} 
+                    className={cn(
+                      "hover:shadow-md transition-shadow relative",
+                      exp.experimento_sucesso && "border-yellow-400 shadow-yellow-100"
+                    )}
+                  >
+                    {/* Status Badge - Canto Superior Direito */}
+                    <div className="absolute top-2 right-2 z-10">
+                      {(() => {
+                        const statusBadge = getStatusBadge(exp.status);
+                        return (
+                          <Badge variant={statusBadge.variant} className={statusBadge.color}>
+                            {statusBadge.label}
+                          </Badge>
+                        );
+                      })()}
+                    </div>
 
                   {/* Success Trophy - if applicable */}
                   {exp.experimento_sucesso && (
@@ -819,6 +872,13 @@ export default function ExperimentsList() {
                           <DropdownMenuItem onClick={() => handleEdit(exp.id)}>
                             <Edit2 className="mr-2 h-4 w-4" />
                             Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDuplicate(exp.id)}
+                            disabled={duplicating}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Duplicar
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-destructive" 
@@ -865,9 +925,10 @@ export default function ExperimentsList() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </TooltipProvider>
 
           {/* Pagination */}
           {totalPages > 1 && (

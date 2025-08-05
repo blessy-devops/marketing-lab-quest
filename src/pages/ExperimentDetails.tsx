@@ -21,6 +21,8 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ComentarioItem } from "@/components/ComentarioItem";
 import { TipoExperimentoDisplay } from "@/components/forms/TipoExperimentoDisplay";
+import { FileUpload } from "@/components/anexos/FileUpload";
+import { useAnexos } from "@/hooks/useAnexos";
 
 type Metrica = Tables<"metricas">;
 
@@ -35,6 +37,9 @@ const ExperimentDetails = () => {
   const [novoComentario, setNovoComentario] = useState("");
   const [editingText, setEditingText] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  // Hook de anexos
+  const { anexos, loading: loadingAnexos, setAnexos } = useAnexos(id);
 
   const experimento = experimentos?.find(exp => exp.id === id);
   
@@ -248,13 +253,16 @@ const ExperimentDetails = () => {
 
       {/* Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="metrics">Métricas</TabsTrigger>
           <TabsTrigger value="results" disabled={experimento.status !== 'concluido'}>
             Resultados
           </TabsTrigger>
-          <TabsTrigger value="attachments">Anexos</TabsTrigger>
+          <TabsTrigger value="attachments">
+            Anexos ({anexos.length})
+          </TabsTrigger>
+          <TabsTrigger value="comments">Comentários</TabsTrigger>
         </TabsList>
 
         {/* Aba Visão Geral */}
@@ -506,53 +514,99 @@ const ExperimentDetails = () => {
 
         {/* Aba Anexos */}
         <TabsContent value="attachments" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Anexos do Experimento</h3>
-            <Button>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Arquivo
-            </Button>
-          </div>
+          <FileUpload 
+            experimentoId={id!}
+            anexos={anexos}
+            onAnexosChange={setAnexos}
+          />
+        </TabsContent>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Área de upload */}
-            <Card className="border-dashed">
-              <CardContent className="py-8 text-center">
-                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Arraste arquivos aqui ou clique para selecionar</p>
-                <Button variant="outline" className="mt-4">
-                  Selecionar Arquivos
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Exemplo de anexos */}
-            <Card>
-              <CardContent className="py-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <Image className="h-6 w-6 text-primary" />
-                  <div>
-                    <p className="font-medium">screenshot_campanha.png</p>
-                    <p className="text-sm text-muted-foreground">2.1 MB</p>
+        {/* Aba Comentários */}
+        <TabsContent value="comments" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Comentários e Notas ({comentarios.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Formulário para novo comentário */}
+              {user && (
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {user.email?.charAt(0).toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-2">
+                      <Textarea
+                        placeholder="Adicionar comentário..."
+                        value={novoComentario}
+                        onChange={(e) => setNovoComentario(e.target.value)}
+                        className="min-h-[60px]"
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={async () => {
+                            await adicionarComentario(novoComentario);
+                            setNovoComentario("");
+                          }}
+                          disabled={!novoComentario.trim()}
+                          size="sm"
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          Comentar
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">Visualizar</Button>
-              </CardContent>
-            </Card>
+              )}
 
-            <Card>
-              <CardContent className="py-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <FileText className="h-6 w-6 text-primary" />
-                  <div>
-                    <p className="font-medium">relatorio_metricas.pdf</p>
-                    <p className="text-sm text-muted-foreground">1.8 MB</p>
-                  </div>
+              {/* Lista de comentários */}
+              {loadingComentarios ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex gap-3">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <Button variant="outline" size="sm">Download</Button>
-              </CardContent>
-            </Card>
-          </div>
+              ) : comentarios.length > 0 ? (
+                <div className="space-y-4 mt-6">
+                  {comentarios.map((comentario) => (
+                    <ComentarioItem
+                      key={comentario.id}
+                      comentario={comentario}
+                      user={user}
+                      editingId={editingId}
+                      editingText={editingText}
+                      setEditingId={setEditingId}
+                      setEditingText={setEditingText}
+                      editarComentario={editarComentario}
+                      excluirComentario={excluirComentario}
+                      onEditClick={(comentario) => {
+                        setEditingId(comentario.id);
+                        setEditingText(comentario.texto);
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhum comentário ainda.</p>
+                  <p className="text-sm">Seja o primeiro a comentar!</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

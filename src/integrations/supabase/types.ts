@@ -19,7 +19,12 @@ export type Database = {
           created_at: string
           descricao: string | null
           experimento_id: string
+          file_name: string | null
+          file_size: number | null
           id: string
+          is_link: boolean | null
+          mime_type: string | null
+          storage_path: string | null
           tipo: string
           url: string
         }
@@ -27,7 +32,12 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           experimento_id: string
+          file_name?: string | null
+          file_size?: number | null
           id?: string
+          is_link?: boolean | null
+          mime_type?: string | null
+          storage_path?: string | null
           tipo: string
           url: string
         }
@@ -35,7 +45,12 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           experimento_id?: string
+          file_name?: string | null
+          file_size?: number | null
           id?: string
+          is_link?: boolean | null
+          mime_type?: string | null
+          storage_path?: string | null
           tipo?: string
           url?: string
         }
