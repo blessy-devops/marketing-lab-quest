@@ -199,11 +199,13 @@ export default function Settings() {
         .from('profiles')
         .select(`
           *,
-          user_roles!inner(role)
+          user_roles(role)
         `)
-        .eq('ativo', true);
+        .eq('ativo', true)
+        .order('nome_completo');
 
       if (error) {
+        console.error('Erro ao carregar usuários:', error);
         toast({
           title: "Erro",
           description: "Não foi possível carregar os usuários.",
@@ -212,6 +214,7 @@ export default function Settings() {
         return;
       }
 
+      console.log('Usuários carregados:', usersData);
       setUsers(usersData || []);
     } catch (error) {
       toast({
