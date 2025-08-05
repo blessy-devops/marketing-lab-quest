@@ -2,7 +2,6 @@ import {
   BarChart3, 
   Beaker, 
   Home, 
-  Plus, 
   Trophy,
   FileText,
   Settings,
@@ -27,7 +26,6 @@ import {
 const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Experimentos", url: "/experimentos", icon: Beaker },
-  { title: "Novo Experimento", url: "/experimentos/novo", icon: Plus },
   { title: "Oráculo", url: "/oraculo", icon: Brain },
 ];
 
