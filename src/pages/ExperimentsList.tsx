@@ -10,12 +10,14 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { ArrowUpDown, Calendar, Eye, MoreHorizontal, Plus, Search, Edit2, Trash2, Filter, Grid, List, X, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, Calendar, Eye, MoreHorizontal, Plus, Search, Edit2, Trash2, Filter, Grid, List, X, ChevronDown, CalendarIcon, Trophy, Star } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useExperimentos } from '@/hooks/useSupabaseData';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DateRange } from 'react-day-picker';
 import { CANAIS, CANAIS_OPTIONS, getChannelsByCategory, getChannelIcon } from "@/constants/canais";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -29,20 +31,25 @@ interface ExperimentoExtended {
   data_inicio?: string;
   data_fim?: string;
   canais?: string[];
+  experimento_sucesso?: boolean;
+  resultados?: {
+    matriz_ice?: { impacto: number; confianca: number; facilidade: number };
+    roi?: number;
+  }[];
 }
 
-const getStatusColor = (status?: string) => {
+const getStatusBadge = (status?: string) => {
   switch (status) {
     case 'concluido':
-      return 'bg-green-100 text-green-800 border-green-200';
+      return { variant: 'default' as const, color: 'bg-green-500 text-white', label: '✅ Concluído' };
     case 'em_andamento':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+      return { variant: 'default' as const, color: 'bg-blue-500 text-white', label: '🔵 Em execução' };
     case 'planejado':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'pausado':
-      return 'bg-red-100 text-red-800 border-red-200';
+      return { variant: 'secondary' as const, color: 'bg-gray-500 text-white', label: '🟢 Planejado' };
+    case 'cancelado':
+      return { variant: 'destructive' as const, color: 'bg-red-500 text-white', label: '❌ Cancelado' };
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return { variant: 'outline' as const, color: 'bg-gray-100 text-gray-800', label: 'N/A' };
   }
 };
 
@@ -74,9 +81,28 @@ const TYPES = [
 
 const STATUS_OPTIONS = [
   { value: 'planejado', label: 'Planejado' },
-  { value: 'em_andamento', label: 'Em Andamento' },
-  { value: 'pausado', label: 'Pausado' },
-  { value: 'concluido', label: 'Concluído' }
+  { value: 'em_andamento', label: 'Em Execução' },
+  { value: 'concluido', label: 'Concluído' },
+  { value: 'cancelado', label: 'Cancelado' }
+];
+
+const ROI_RANGES = [
+  { value: 'negative', label: '< 0%' },
+  { value: 'low', label: '0-50%' },
+  { value: 'medium', label: '50-100%' },
+  { value: 'high', label: '> 100%' }
+];
+
+const ICE_RANGES = [
+  { value: 'low', label: '0-3' },
+  { value: 'medium', label: '4-6' },
+  { value: 'high', label: '7-10' }
+];
+
+const DURATION_RANGES = [
+  { value: 'short', label: '< 7 dias' },
+  { value: 'medium', label: '7-30 dias' },
+  { value: 'long', label: '> 30 dias' }
 ];
 
 const ITEMS_PER_PAGE = 20;
@@ -90,13 +116,36 @@ export default function ExperimentsList() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [selectedROI, setSelectedROI] = useState<string>('');
+  const [selectedICE, setSelectedICE] = useState<string>('');
+  const [selectedDuration, setSelectedDuration] = useState<string>('');
+  const [hasResults, setHasResults] = useState<string>('');
+  const [onlySuccess, setOnlySuccess] = useState(false);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [openChannelCategories, setOpenChannelCategories] = useState<Record<string, boolean>>({});
+  const [typeComboboxOpen, setTypeComboboxOpen] = useState(false);
+
+  // Helper functions for filtering
+  const getROIFromExperiment = (exp: ExperimentoExtended) => {
+    if (!exp.resultados || exp.resultados.length === 0) return null;
+    return exp.resultados[0]?.roi || 0;
+  };
+
+  const getICEScoreFromExperiment = (exp: ExperimentoExtended) => {
+    if (!exp.resultados || exp.resultados.length === 0) return null;
+    const ice = exp.resultados[0]?.matriz_ice;
+    if (!ice) return null;
+    return ((ice.impacto || 0) + (ice.confianca || 0) + (ice.facilidade || 0)) / 3;
+  };
+
+  const getDurationFromExperiment = (exp: ExperimentoExtended) => {
+    if (!exp.data_inicio || !exp.data_fim) return null;
+    return differenceInDays(new Date(exp.data_fim), new Date(exp.data_inicio));
+  };
 
   // Filter experiments
   const filteredExperiments = (experimentos || []).filter((exp: ExperimentoExtended) => {
@@ -106,15 +155,97 @@ export default function ExperimentsList() {
     const matchesChannel = selectedChannels.length === 0 || 
       (exp.canais && exp.canais.some(canal => selectedChannels.includes(canal)));
     
+    // Date range filter
     let matchesDate = true;
-    if (startDate && exp.data_inicio) {
-      matchesDate = matchesDate && new Date(exp.data_inicio) >= new Date(startDate);
+    if (dateRange?.from && exp.data_inicio) {
+      matchesDate = matchesDate && new Date(exp.data_inicio) >= dateRange.from;
     }
-    if (endDate && exp.data_fim) {
-      matchesDate = matchesDate && new Date(exp.data_fim) <= new Date(endDate);
+    if (dateRange?.to && exp.data_fim) {
+      matchesDate = matchesDate && new Date(exp.data_fim) <= dateRange.to;
     }
 
-    return matchesSearch && matchesType && matchesStatus && matchesChannel && matchesDate;
+    // ROI filter
+    let matchesROI = true;
+    if (selectedROI) {
+      const roi = getROIFromExperiment(exp);
+      if (roi !== null) {
+        switch (selectedROI) {
+          case 'negative':
+            matchesROI = roi < 0;
+            break;
+          case 'low':
+            matchesROI = roi >= 0 && roi <= 50;
+            break;
+          case 'medium':
+            matchesROI = roi > 50 && roi <= 100;
+            break;
+          case 'high':
+            matchesROI = roi > 100;
+            break;
+        }
+      } else {
+        matchesROI = false;
+      }
+    }
+
+    // ICE Score filter
+    let matchesICE = true;
+    if (selectedICE) {
+      const ice = getICEScoreFromExperiment(exp);
+      if (ice !== null) {
+        switch (selectedICE) {
+          case 'low':
+            matchesICE = ice <= 3;
+            break;
+          case 'medium':
+            matchesICE = ice > 3 && ice <= 6;
+            break;
+          case 'high':
+            matchesICE = ice > 6;
+            break;
+        }
+      } else {
+        matchesICE = false;
+      }
+    }
+
+    // Duration filter
+    let matchesDuration = true;
+    if (selectedDuration) {
+      const duration = getDurationFromExperiment(exp);
+      if (duration !== null) {
+        switch (selectedDuration) {
+          case 'short':
+            matchesDuration = duration < 7;
+            break;
+          case 'medium':
+            matchesDuration = duration >= 7 && duration <= 30;
+            break;
+          case 'long':
+            matchesDuration = duration > 30;
+            break;
+        }
+      } else {
+        matchesDuration = false;
+      }
+    }
+
+    // Results documented filter
+    let matchesResults = true;
+    if (hasResults) {
+      const hasDocumentedResults = exp.resultados && exp.resultados.length > 0;
+      matchesResults = hasResults === 'with' ? hasDocumentedResults : !hasDocumentedResults;
+    }
+
+    // Success filter
+    let matchesSuccess = true;
+    if (onlySuccess) {
+      matchesSuccess = exp.experimento_sucesso === true;
+    }
+
+    return matchesSearch && matchesType && matchesStatus && matchesChannel && 
+           matchesDate && matchesROI && matchesICE && matchesDuration && 
+           matchesResults && matchesSuccess;
   });
 
   // Sort experiments
@@ -150,8 +281,12 @@ export default function ExperimentsList() {
     setSelectedTypes([]);
     setSelectedStatus('');
     setSelectedChannels([]);
-    setStartDate('');
-    setEndDate('');
+    setDateRange(undefined);
+    setSelectedROI('');
+    setSelectedICE('');
+    setSelectedDuration('');
+    setHasResults('');
+    setOnlySuccess(false);
     setSortField('');
     setCurrentPage(1);
   };
@@ -164,12 +299,16 @@ export default function ExperimentsList() {
     }
   };
 
-  const handleTypeChange = (type: string, checked: boolean) => {
-    if (checked) {
-      setSelectedTypes([...selectedTypes, type]);
-    } else {
+  const handleTypeToggle = (type: string) => {
+    if (selectedTypes.includes(type)) {
       setSelectedTypes(selectedTypes.filter(t => t !== type));
+    } else {
+      setSelectedTypes([...selectedTypes, type]);
     }
+  };
+
+  const removeType = (type: string) => {
+    setSelectedTypes(selectedTypes.filter(t => t !== type));
   };
 
   const toggleChannelCategory = (categoria: string) => {
@@ -250,27 +389,64 @@ export default function ExperimentsList() {
           </div>
 
           {/* Filter Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Type Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Tipo</label>
-              <div className="space-y-2">
-                {TYPES.map((type) => (
-                  <div key={type} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`type-${type}`}
-                      checked={selectedTypes.includes(type)}
-                      onCheckedChange={(checked) => handleTypeChange(type, checked as boolean)}
-                    />
-                    <label
-                      htmlFor={`type-${type}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Type Filter with Combobox */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tipo de Experimento</label>
+              <Popover open={typeComboboxOpen} onOpenChange={setTypeComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={typeComboboxOpen}
+                    className="w-full justify-between"
+                  >
+                    {selectedTypes.length > 0 
+                      ? `${selectedTypes.length} tipo(s) selecionado(s)`
+                      : "Selecionar tipos..."
+                    }
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Buscar tipos..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum tipo encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {TYPES.map((type) => (
+                          <CommandItem
+                            key={type}
+                            value={type}
+                            onSelect={() => handleTypeToggle(type)}
+                          >
+                            <Checkbox
+                              checked={selectedTypes.includes(type)}
+                              className="mr-2"
+                            />
+                            {type}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              
+              {/* Selected Types as Chips */}
+              {selectedTypes.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedTypes.map((type) => (
+                    <Badge key={type} variant="secondary" className="flex items-center gap-1">
                       {type}
-                    </label>
-                  </div>
-                ))}
-              </div>
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => removeType(type)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Status Filter */}
@@ -338,23 +514,138 @@ export default function ExperimentsList() {
               </Popover>
             </div>
 
-            {/* Date Filters */}
+            {/* Date Range Picker */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Período</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateRange && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "dd/MM/yy")} -{" "}
+                          {format(dateRange.to, "dd/MM/yy")}
+                          {dateRange.from && dateRange.to && (
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              ({differenceInDays(dateRange.to, dateRange.from)} dias)
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        format(dateRange.from, "dd/MM/yyyy")
+                      )
+                    ) : (
+                      "Selecionar período"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* Advanced Filters Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* ROI Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Data Início</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+              <label className="text-sm font-medium mb-2 block">ROI</label>
+              <Select value={selectedROI} onValueChange={setSelectedROI}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  {ROI_RANGES.map((range) => (
+                    <SelectItem key={range.value} value={range.value}>
+                      {range.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
+            {/* ICE Score Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Data Fim</label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+              <label className="text-sm font-medium mb-2 block">Score ICE</label>
+              <Select value={selectedICE} onValueChange={setSelectedICE}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  {ICE_RANGES.map((range) => (
+                    <SelectItem key={range.value} value={range.value}>
+                      {range.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Duration Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Duração</label>
+              <Select value={selectedDuration} onValueChange={setSelectedDuration}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas</SelectItem>
+                  {DURATION_RANGES.map((range) => (
+                    <SelectItem key={range.value} value={range.value}>
+                      {range.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Results Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Resultados</label>
+              <Select value={hasResults} onValueChange={setHasResults}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="with">Com resultados</SelectItem>
+                  <SelectItem value="without">Sem resultados</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Success Filter */}
+            <div className="flex items-center space-x-2 pt-6">
+              <Checkbox
+                id="success-filter"
+                checked={onlySuccess}
+                onCheckedChange={(checked) => setOnlySuccess(checked === true)}
               />
+              <label
+                htmlFor="success-filter"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1"
+              >
+                <Trophy className="h-4 w-4 text-yellow-500" />
+                Apenas sucessos
+              </label>
             </div>
           </div>
 
@@ -428,14 +719,16 @@ export default function ExperimentsList() {
                         {exp.tipo || 'N/A'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(exp.status)}>
-                        {exp.status === 'planejado' ? 'Planejado' :
-                         exp.status === 'em_andamento' ? 'Em Andamento' :
-                         exp.status === 'pausado' ? 'Pausado' :
-                         exp.status === 'concluido' ? 'Concluído' : 'N/A'}
-                      </Badge>
-                    </TableCell>
+                     <TableCell>
+                       {(() => {
+                         const statusBadge = getStatusBadge(exp.status);
+                         return (
+                           <Badge variant={statusBadge.variant} className={statusBadge.color}>
+                             {statusBadge.label}
+                           </Badge>
+                         );
+                       })()}
+                     </TableCell>
                     <TableCell>{exp.responsavel || 'N/A'}</TableCell>
                     <TableCell>
                       <div className="text-sm">
@@ -478,8 +771,29 @@ export default function ExperimentsList() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {paginatedExperiments.map((exp: ExperimentoExtended) => (
-                <Card key={exp.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
+                <Card key={exp.id} className="hover:shadow-md transition-shadow relative">
+                  {/* Status Badge - Canto Superior Direito */}
+                  <div className="absolute top-2 right-2 z-10">
+                    {(() => {
+                      const statusBadge = getStatusBadge(exp.status);
+                      return (
+                        <Badge variant={statusBadge.variant} className={statusBadge.color}>
+                          {statusBadge.label}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Success Trophy - if applicable */}
+                  {exp.experimento_sucesso && (
+                    <div className="absolute top-2 left-2 z-10">
+                      <Badge variant="default" className="bg-yellow-500 text-white">
+                        🏆
+                      </Badge>
+                    </div>
+                  )}
+
+                  <CardHeader className="pb-2 pr-20">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">
                         <Link
@@ -519,15 +833,9 @@ export default function ExperimentsList() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <div className="flex justify-between">
+                      <div className="flex justify-start">
                         <Badge className={getTypeColor(exp.tipo)}>
                           {exp.tipo || 'N/A'}
-                        </Badge>
-                        <Badge className={getStatusColor(exp.status)}>
-                          {exp.status === 'planejado' ? 'Planejado' :
-                           exp.status === 'em_andamento' ? 'Em Andamento' :
-                           exp.status === 'pausado' ? 'Pausado' :
-                           exp.status === 'concluido' ? 'Concluído' : 'N/A'}
                         </Badge>
                       </div>
                       {exp.responsavel && (
