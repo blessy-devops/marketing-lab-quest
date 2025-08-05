@@ -366,6 +366,13 @@ export default function ExperimentsList() {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            onClick={() => navigate('/experimentos/novo')}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Experimento
+          </Button>
+          <Button
             variant="outline"
             size="icon"
             onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')}
