@@ -17,7 +17,7 @@ const ExperimentsList = lazy(() => import("@/pages/ExperimentsList"));
 const ExperimentDetails = lazy(() => import("@/pages/ExperimentDetails"));
 const NewExperiment = lazy(() => import("@/pages/NewExperiment"));
 const EditExperiment = lazy(() => import("@/pages/EditExperiment"));
-const Analytics = lazy(() => import("@/pages/Analytics"));
+
 const Reports = lazy(() => import("@/pages/Reports"));
 const Gallery = lazy(() => import("@/pages/Gallery"));
 const Oraculo = lazy(() => import("@/pages/Oraculo"));
@@ -126,14 +126,6 @@ function App() {
                     element={
                       <LazyWrapper>
                         <NewExperiment />
-                      </LazyWrapper>
-                    }
-                  />
-                  <Route
-                    path="analytics"
-                    element={
-                      <LazyWrapper>
-                        <Analytics />
                       </LazyWrapper>
                     }
                   />

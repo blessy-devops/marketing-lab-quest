@@ -347,7 +347,7 @@ export default function Reports() {
       </Card>
 
       {/* Cards de Insights Principais */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -371,32 +371,6 @@ export default function Reports() {
           <CardContent>
             <div className="text-2xl font-bold">{processedData.successRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">experimentos bem-sucedidos</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              ROI Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{processedData.totalROI.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">retorno acumulado</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              ROI Médio
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{processedData.avgROI.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">por experimento</p>
           </CardContent>
         </Card>
       </div>

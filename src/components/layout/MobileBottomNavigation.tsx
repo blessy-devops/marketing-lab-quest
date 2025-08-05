@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 const navigationItems = [
   { to: "/", icon: Home, label: "Início" },
   { to: "/experimentos", icon: TestTube, label: "Experimentos" },
-  { to: "/analytics", icon: BarChart3, label: "Analytics" },
   { to: "/galeria", icon: Image, label: "Galeria" },
   { to: "/relatorios", icon: FileText, label: "Relatórios" },
 ];

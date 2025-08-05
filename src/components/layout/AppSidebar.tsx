@@ -32,7 +32,6 @@ const mainItems = [
 const analyticsItems = [
   { title: "Galeria de Sucessos", url: "/galeria", icon: Trophy },
   { title: "Relatórios", url: "/relatorios", icon: FileText },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
 ];
 
 export function AppSidebar() {
