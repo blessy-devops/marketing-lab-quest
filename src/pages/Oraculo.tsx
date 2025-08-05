@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useOraculo } from "@/hooks/useOraculo";
 
 export default function Oraculo() {
@@ -19,6 +20,8 @@ export default function Oraculo() {
   const [pergunta, setPergunta] = useState("");
   const [contexto, setContexto] = useState("");
   const [tipo, setTipo] = useState("geral");
+  const [metricas, setMetricas] = useState<string[]>([]);
+  const [priorizacao, setPriorizacao] = useState("ice");
 
   const { 
     consultarOraculo, 
@@ -29,33 +32,18 @@ export default function Oraculo() {
     historico 
   } = useOraculo();
 
-  // Estados para consultas guiadas
-  const [gapData, setGapData] = useState({
-    meta: "",
-    dias: "",
-    margem: ""
-  });
 
-  const [produtoData, setProdutoData] = useState({
-    tipo: "",
-    ticket: "",
-    publico: "",
-    orcamento: ""
-  });
-
-  const [sazonalData, setSazonalData] = useState({
-    evento: "",
-    meta: "",
-    dias: ""
-  });
-
-  // Exemplos clicáveis
-  const exemplos = [
-    "Campanha relâmpago para fechar gap de 50k em 3 dias",
-    "Melhor estratégia para Black Friday",
-    "Como aumentar ticket médio em 30%",
-    "Estratégia de recuperação de carrinho abandonado",
-    "Campanha para público frio com orçamento limitado"
+  // Métricas disponíveis
+  const metricasDisponiveis = [
+    { id: "receita", label: "📈 Receita", emoji: "📈" },
+    { id: "conversao", label: "💳 Conversão", emoji: "💳" },
+    { id: "ticket", label: "🛒 Ticket Médio", emoji: "🛒" },
+    { id: "retencao", label: "👥 Retenção", emoji: "👥" },
+    { id: "cac", label: "📊 CAC", emoji: "📊" },
+    { id: "ltv", label: "🔄 LTV", emoji: "🔄" },
+    { id: "abertura", label: "📧 Taxa de Abertura", emoji: "📧" },
+    { id: "ctr", label: "🎯 CTR", emoji: "🎯" },
+    { id: "outras", label: "Outras", emoji: "🔧" }
   ];
 
   // Playbooks mockados
@@ -86,13 +74,17 @@ export default function Oraculo() {
     }
   ];
 
-  const handleExemploClick = (exemplo: string) => {
-    setPergunta(exemplo);
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await consultarOraculo(pergunta, contexto, tipo);
+    
+    // Incluir métricas e priorização no contexto
+    const contextoPadrao = [
+      contexto,
+      metricas.length > 0 ? `Métricas alvo: ${metricas.join(', ')}` : '',
+      `Priorização: ${priorizacao === 'ice' ? 'Por ICE Score (Impacto, Confiança, Facilidade)' : 'Livre'}`
+    ].filter(Boolean).join(' | ');
+    
+    await consultarOraculo(pergunta, contextoPadrao, tipo);
   };
 
   const handleHistoricoClick = (item: any) => {
@@ -106,11 +98,6 @@ export default function Oraculo() {
     };
     // Temporarily set response state for display (this should use actual state management)
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleTemplateGap = async () => {
-    const gapQuery = `Recuperar gap de vendas de R$ ${gapData.meta} em ${gapData.dias} dias com margem ${gapData.margem}`;
-    await consultarOraculo(gapQuery, `Meta: ${gapData.meta}, Dias: ${gapData.dias}, Margem: ${gapData.margem}`, 'urgente');
   };
 
   return (
@@ -134,14 +121,10 @@ export default function Oraculo() {
 
       {/* Tabs de Navegação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
           <TabsTrigger value="consulta-livre" className="flex items-center gap-2">
             <Brain className="w-4 h-4" />
             🔮 Consulta Livre
-          </TabsTrigger>
-          <TabsTrigger value="consultas-guiadas" className="flex items-center gap-2">
-            <Target className="w-4 h-4" />
-            📋 Consultas Guiadas
           </TabsTrigger>
           <TabsTrigger value="playbooks" className="flex items-center gap-2">
             <BookOpen className="w-4 h-4" />
@@ -158,45 +141,84 @@ export default function Oraculo() {
                 Consulta Livre
               </CardTitle>
               <CardDescription>
-                Faça perguntas abertas sobre estratégias de marketing
+                Descreva seu problema atual e/ou objetivo desejado
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="query">O que você quer fazer?</Label>
-                <Textarea
-                  id="query"
-                  placeholder="Descreva sua necessidade ou desafio..."
-                  value={pergunta}
-                  onChange={(e) => setPergunta(e.target.value)}
-                  className="min-h-[120px]"
-                  disabled={loading}
-                  required
-                  minLength={10}
-                />
-                <div className="text-xs text-muted-foreground">
-                  {pergunta.length}/500 caracteres
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="query">O que você quer fazer?</Label>
+                  <Textarea
+                    id="query"
+                    placeholder="Descreva seu problema atual e/ou objetivo desejado. Seja específico sobre:
+• Situação atual (métricas, problemas, gaps)
+• Objetivo desejado (metas, prazos, valores)
+• Contexto relevante (público, produto, restrições)"
+                    value={pergunta}
+                    onChange={(e) => setPergunta(e.target.value)}
+                    className="min-h-[140px]"
+                    disabled={loading}
+                    required
+                    minLength={10}
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    {pergunta.length}/500 caracteres
+                  </div>
                 </div>
-              </div>
 
-              {/* Exemplos clicáveis */}
-              <div className="space-y-2">
-                <Label>Exemplos de consultas:</Label>
-                <div className="flex flex-wrap gap-2">
-                  {exemplos.map((exemplo, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleExemploClick(exemplo)}
-                      className="text-xs"
-                    >
-                      {exemplo}
-                    </Button>
-                  ))}
+                {/* Orientações em texto */}
+                <div className="bg-blue-50 dark:bg-blue-950/50 p-4 rounded-lg space-y-2">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100">💡 Exemplos de perguntas efetivas:</h4>
+                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                    <li>• "Estamos com queda de 30% na conversão do checkout. Como recuperar?"</li>
+                    <li>• "Preciso aumentar ticket médio em 20% no próximo mês. Quais estratégias usar?"</li>
+                    <li>• "Gap de R$ 50k detectado. Tenho 5 dias para recuperar. O que fazer?"</li>
+                  </ul>
                 </div>
-              </div>
+
+                {/* Métricas que quer impactar */}
+                <div className="space-y-3">
+                  <Label>Métricas que quero impactar</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {metricasDisponiveis.map((metrica) => (
+                      <div key={metrica.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={metrica.id}
+                          checked={metricas.includes(metrica.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setMetricas([...metricas, metrica.id]);
+                            } else {
+                              setMetricas(metricas.filter(m => m !== metrica.id));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={metrica.id} className="text-sm cursor-pointer">
+                          {metrica.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Seletor de priorização ICE */}
+                <div className="space-y-3">
+                  <Label>Como priorizar as sugestões?</Label>
+                  <RadioGroup value={priorizacao} onValueChange={setPriorizacao}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="ice" id="ice" />
+                      <Label htmlFor="ice" className="cursor-pointer">
+                        <span className="font-medium">Por ICE Score</span> - Prioriza por Impacto, Confiança e Facilidade
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="livre" id="livre" />
+                      <Label htmlFor="livre" className="cursor-pointer">
+                        <span className="font-medium">Livre</span> - Mostra todas as opções sem ordem específica
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
 
               {/* Campo contexto opcional */}
               <div className="space-y-2">
@@ -248,168 +270,6 @@ export default function Oraculo() {
             </form>
           </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Tab Consultas Guiadas */}
-        <TabsContent value="consultas-guiadas" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Card Gap Recovery */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-red-500" />
-                  Recuperar Gap de Vendas
-                </CardTitle>
-                <CardDescription>
-                  Estratégia para fechar gaps em prazos curtos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Meta em R$</Label>
-                  <Input
-                    placeholder="50.000"
-                    value={gapData.meta}
-                    onChange={(e) => setGapData({...gapData, meta: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Dias restantes</Label>
-                  <Input
-                    placeholder="3"
-                    type="number"
-                    value={gapData.dias}
-                    onChange={(e) => setGapData({...gapData, dias: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Margem disponível</Label>
-                  <Select onValueChange={(value) => setGapData({...gapData, margem: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baixa">Baixa (5-15%)</SelectItem>
-                      <SelectItem value="media">Média (15-25%)</SelectItem>
-                      <SelectItem value="alta">Alta (25%+)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleTemplateGap} className="w-full">
-                  <Target className="w-4 h-4 mr-2" />
-                  Gerar Estratégia
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Card Lançamento */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                  Lançamento de Produto
-                </CardTitle>
-                <CardDescription>
-                  Plano completo para lançamentos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Tipo de produto</Label>
-                  <Input
-                    placeholder="Ex: Curso, Infoproduto, SaaS..."
-                    value={produtoData.tipo}
-                    onChange={(e) => setProdutoData({...produtoData, tipo: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Ticket médio</Label>
-                  <Input
-                    placeholder="197"
-                    value={produtoData.ticket}
-                    onChange={(e) => setProdutoData({...produtoData, ticket: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Público-alvo</Label>
-                  <Select onValueChange={(value) => setProdutoData({...produtoData, publico: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="frio">Público Frio</SelectItem>
-                      <SelectItem value="morno">Público Morno</SelectItem>
-                      <SelectItem value="quente">Base Aquecida</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Orçamento</Label>
-                  <Input
-                    placeholder="5000"
-                    value={produtoData.orcamento}
-                    onChange={(e) => setProdutoData({...produtoData, orcamento: e.target.value})}
-                  />
-                </div>
-                <Button className="w-full">
-                  <Play className="w-4 h-4 mr-2" />
-                  Criar Plano
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Card Campanha Sazonal */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-purple-500" />
-                  Campanha Sazonal
-                </CardTitle>
-                <CardDescription>
-                  Estratégias para datas comemorativas
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Evento</Label>
-                  <Select onValueChange={(value) => setSazonalData({...sazonalData, evento: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o evento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="black-friday">Black Friday</SelectItem>
-                      <SelectItem value="natal">Natal</SelectItem>
-                      <SelectItem value="dia-maes">Dia das Mães</SelectItem>
-                      <SelectItem value="dia-pais">Dia dos Pais</SelectItem>
-                      <SelectItem value="valentine">Dia dos Namorados</SelectItem>
-                      <SelectItem value="cyber-monday">Cyber Monday</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Meta de faturamento</Label>
-                  <Input
-                    placeholder="100.000"
-                    value={sazonalData.meta}
-                    onChange={(e) => setSazonalData({...sazonalData, meta: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Dias de campanha</Label>
-                  <Input
-                    placeholder="7"
-                    type="number"
-                    value={sazonalData.dias}
-                    onChange={(e) => setSazonalData({...sazonalData, dias: e.target.value})}
-                  />
-                </div>
-                <Button className="w-full">
-                  <Gift className="w-4 h-4 mr-2" />
-                  Gerar Playbook
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
         {/* Tab Playbooks */}
