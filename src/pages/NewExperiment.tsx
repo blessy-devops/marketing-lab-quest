@@ -787,7 +787,7 @@ export default function NewExperiment() {
                       )}
                     />
                   </div>
-                  <div className="w-32">
+                  <div className="w-28">
                     <FormField
                       control={form.control}
                       name={`metricas.${index}.valor`}
@@ -810,7 +810,7 @@ export default function NewExperiment() {
                       )}
                     />
                   </div>
-                  <div className="w-32">
+                  <div className="w-28">
                     <FormField
                       control={form.control}
                       name={`metricas.${index}.baseline`}
@@ -836,7 +836,7 @@ export default function NewExperiment() {
                       )}
                     />
                   </div>
-                  <div className="w-24">
+                  <div className="w-28">
                     <FormField
                       control={form.control}
                       name={`metricas.${index}.unidade`}
