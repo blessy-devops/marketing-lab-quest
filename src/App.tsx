@@ -24,6 +24,7 @@ const Oraculo = lazy(() => import("@/pages/Oraculo"));
 const Playbooks = lazy(() => import("@/pages/Playbooks"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const TiposExperimento = lazy(() => import("@/pages/admin/TiposExperimento"));
+const GestaoCanais = lazy(() => import("@/pages/admin/GestaoCanais"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const Settings = lazy(() => import("@/pages/Settings"));
 
@@ -167,6 +168,14 @@ function App() {
                     element={
                       <LazyWrapper>
                         <TiposExperimento />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="admin/canais"
+                    element={
+                      <LazyWrapper>
+                        <GestaoCanais />
                       </LazyWrapper>
                     }
                   />

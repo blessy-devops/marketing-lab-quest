@@ -135,6 +135,14 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/admin/canais" className={getNavCls}>
+                    <Settings className="w-4 h-4" />
+                    <span className="group-data-[collapsible=icon]:sr-only">Canais & Subcanais</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
