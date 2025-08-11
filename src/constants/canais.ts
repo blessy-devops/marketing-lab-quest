@@ -75,6 +75,12 @@ export const CANAIS_OPTIONS: CanalOption[] = [
     icon: Heart,
     categoria: CATEGORIAS_CANAIS.CREATORS
   },
+  {
+    value: "Renata Lima",
+    label: "Renata Lima",
+    icon: Users,
+    categoria: CATEGORIAS_CANAIS.CREATORS
+  },
 
   // Mídia Paga
   {
