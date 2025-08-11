@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Upload, X, FileText, Download, Eye, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,7 +23,13 @@ const ACCEPTED_FILE_TYPES = {
   'image/gif': '.gif',
   'application/pdf': '.pdf',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
-  'text/csv': '.csv'
+  'application/vnd.ms-excel': '.xls',
+  'text/csv': '.csv',
+  'application/msword': '.doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'application/vnd.ms-powerpoint': '.ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+  'text/plain': '.txt'
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -241,6 +247,7 @@ export function FileUpload({ experimentoId, anexos, onAnexosChange }: FileUpload
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Adicionar Link</DialogTitle>
+                    <DialogDescription>Insira um link externo para anexar ao experimento.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -391,6 +398,7 @@ export function FileUpload({ experimentoId, anexos, onAnexosChange }: FileUpload
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Visualizar Imagem</DialogTitle>
+            <DialogDescription>Pré-visualização em tamanho maior do arquivo de imagem.</DialogDescription>
           </DialogHeader>
           {selectedImage && (
             <div className="flex justify-center">

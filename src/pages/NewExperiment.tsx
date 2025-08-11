@@ -58,6 +58,7 @@ interface FormData {
     tipo: string;
     url: string;
     descricao?: string;
+    file?: File | null;
   }>;
   // Campos de resultado para experimentos já realizados
   rating?: number;
@@ -282,21 +283,63 @@ export default function NewExperiment() {
 
       // Inserir anexos se houver
       if (data.anexos && data.anexos.length > 0) {
-        const anexosData = data.anexos
-          .filter(anexo => anexo.url.trim())
-          .map(anexo => ({
-            experimento_id: novoExperimento.id,
-            tipo: anexo.tipo,
-            url: anexo.url,
-            descricao: anexo.descricao
-          }));
-
-        if (anexosData.length > 0) {
+        // Salvar anexos do tipo link
+        const linkAnexos = data.anexos.filter((anexo) => anexo.tipo === 'link' && (anexo.url || '').trim());
+        if (linkAnexos.length > 0) {
           const { error: anexosError } = await supabase
             .from('anexos')
-            .insert(anexosData);
-
+            .insert(
+              linkAnexos.map((anexo) => ({
+                experimento_id: novoExperimento.id,
+                tipo: 'link',
+                url: anexo.url,
+                descricao: anexo.descricao,
+                is_link: true,
+              }))
+            );
           if (anexosError) throw anexosError;
+        }
+
+        // Salvar anexos de arquivo (imagem/documento)
+        const fileAnexos = data.anexos.filter((anexo) => anexo.tipo !== 'link' && (anexo as any).file);
+        for (const anexo of fileAnexos as any[]) {
+          const file: File | null = (anexo as any).file || null;
+          if (!file) continue;
+
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${novoExperimento.id}/${Date.now()}-${Math.random()}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('experimento-anexos')
+            .upload(fileName, file);
+          if (uploadError) {
+            console.error('Erro upload anexo:', uploadError);
+            toast.error(`Erro ao enviar ${file.name}`);
+            continue;
+          }
+
+          const { data: urlData } = supabase.storage
+            .from('experimento-anexos')
+            .getPublicUrl(fileName);
+
+          const { error: insertError } = await supabase
+            .from('anexos')
+            .insert({
+              experimento_id: novoExperimento.id,
+              tipo: file.type.startsWith('image/') ? 'imagem' : 'documento',
+              url: urlData.publicUrl,
+              storage_path: fileName,
+              file_name: file.name,
+              file_size: file.size,
+              mime_type: file.type,
+              is_link: false,
+              descricao: anexo.descricao || file.name,
+            });
+
+          if (insertError) {
+            console.error('Erro salvar anexo:', insertError);
+            toast.error(`Erro ao salvar ${file.name}`);
+          }
         }
       }
 
@@ -998,7 +1041,7 @@ export default function NewExperiment() {
             <CardHeader>
               <CardTitle>Anexos</CardTitle>
               <CardDescription>
-                Adicione imagens ou links de referência para o experimento
+                Adicione imagens, documentos ou links de referência para o experimento
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1030,19 +1073,43 @@ export default function NewExperiment() {
                       />
                     </div>
                     <div className="flex-1">
-                      <FormField
-                        control={form.control}
-                        name={`anexos.${index}.url`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>URL</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {form.watch(`anexos.${index}.tipo`) === 'link' ? (
+                        <FormField
+                          control={form.control}
+                          name={`anexos.${index}.url`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>URL</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <FormField
+                          control={form.control as any}
+                          name={`anexos.${index}.file` as any}
+                          render={() => (
+                            <FormItem>
+                              <FormLabel>Arquivo</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="file"
+                                  accept=".jpg,.jpeg,.png,.gif,.pdf,.xlsx,.xls,.csv,.doc,.docx,.ppt,.pptx,.txt"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    form.setValue(`anexos.${index}.file` as any, file);
+                                    form.setValue(`anexos.${index}.url` as any, '');
+                                  }}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                     </div>
                     <Button
                       type="button"
@@ -1072,7 +1139,7 @@ export default function NewExperiment() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => appendAnexo({ tipo: "", url: "", descricao: "" })}
+                onClick={() => appendAnexo({ tipo: "link", url: "", descricao: "" })}
                 className="w-full"
               >
                 <Plus className="w-4 h-4 mr-2" />
