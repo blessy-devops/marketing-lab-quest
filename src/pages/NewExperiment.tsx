@@ -406,7 +406,7 @@ export default function NewExperiment() {
             </Card>
 
             {/* Informações Básicas */}
-            <Card className="md:col-span-2">
+            <Card>
               <CardHeader>
                 <CardTitle>Informações Básicas</CardTitle>
                 <CardDescription>
