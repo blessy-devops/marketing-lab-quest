@@ -51,6 +51,7 @@ interface FormData {
     nome: string;
     valor: number;
     unidade?: string;
+    baseline?: number;
   }>;
   anexos?: Array<{
     tipo: string;
@@ -124,7 +125,7 @@ export default function NewExperiment() {
       status: "planejado",
       canais: [],
       hipotese: "",
-      metricas: [{ nome: "", valor: 0, unidade: "" }],
+      metricas: [{ nome: "", valor: 0, unidade: "", baseline: undefined }],
       anexos: [],
       sucesso: undefined,
       roi: undefined,
@@ -232,15 +233,27 @@ export default function NewExperiment() {
 
       // Inserir métricas
       if (data.metricas.length > 0) {
-        const metricasData = data.metricas
-          .filter(metrica => metrica.nome.trim())
-          .map(metrica => ({
+        const metricasPrincipais = data.metricas
+          .filter((metrica) => metrica.nome.trim())
+          .map((metrica) => ({
             experimento_id: novoExperimento.id,
             nome: metrica.nome,
             valor: metrica.valor,
             unidade: metrica.unidade,
-            tipo: tipoCadastro === 'realizado' ? 'realizada' : 'esperada'
+            tipo: tipoCadastro === 'realizado' ? 'realizada' : 'esperada',
           }));
+
+        const metricasBaseline = data.metricas
+          .filter((metrica) => metrica.nome.trim() && metrica.baseline !== undefined && metrica.baseline !== null && !Number.isNaN(metrica.baseline))
+          .map((metrica) => ({
+            experimento_id: novoExperimento.id,
+            nome: metrica.nome,
+            valor: metrica.baseline as number,
+            unidade: metrica.unidade,
+            tipo: 'baseline',
+          }));
+
+        const metricasData = [...metricasPrincipais, ...metricasBaseline];
 
         if (metricasData.length > 0) {
           const { error: metricasError } = await supabase
@@ -796,6 +809,32 @@ export default function NewExperiment() {
                       )}
                     />
                   </div>
+                  <div className="w-32">
+                    <FormField
+                      control={form.control}
+                      name={`metricas.${index}.baseline`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {tipoCadastro === 'realizado' ? 'Valor Anterior (opcional)' : 'Valor Atual (opcional)'}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={field.value ?? ''}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                field.onChange(v === '' ? undefined : parseFloat(v));
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <div className="w-24">
                     <FormField
                       control={form.control}
@@ -826,7 +865,7 @@ export default function NewExperiment() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => appendMetrica({ nome: "", valor: 0, unidade: "" })}
+                onClick={() => appendMetrica({ nome: "", valor: 0, unidade: "", baseline: undefined })}
                 className="w-full"
               >
                 <Plus className="w-4 h-4 mr-2" />
