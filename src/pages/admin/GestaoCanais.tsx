@@ -232,8 +232,8 @@ export default function GestaoCanais() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Novo Canal */}
-          <div className="grid gap-3 md:grid-cols-5 items-end">
-            <div className="md:col-span-2">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_auto_auto_auto] items-end">
+            <div>
               <Label>Nome</Label>
               <Input placeholder="Ex: Email, Social, SEO" value={novoCanal.nome} onChange={(e) => setNovoCanal({ ...novoCanal, nome: e.target.value })} />
             </div>
@@ -277,12 +277,12 @@ export default function GestaoCanais() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
-                  <div className="grid gap-3 md:grid-cols-6 md:items-end">
-                    <div className="md:col-span-2">
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto_auto] md:items-end">
+                    <div>
                       <Label>Nome</Label>
                       <Input value={canal.nome} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, nome: e.target.value } : c)))} />
                     </div>
-                    <div className="md:col-span-2">
+                    <div>
                       <Label>Ícone</Label>
                       <IconPicker
                         value={canal.icone || ""}
@@ -298,12 +298,12 @@ export default function GestaoCanais() {
                       <Switch checked={canal.ativo} onCheckedChange={(v) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, ativo: v } : c)))} />
                       <span className="text-sm">Ativo</span>
                     </div>
-                    <div className="md:col-span-6 flex flex-wrap gap-2 justify-end md:justify-start mt-2">
-                      <Button variant="outline" onClick={() => atualizarCanal(canal)} disabled={loading}>
-                        <Save className="w-4 h-4 mr-2" /> Salvar
+                    <div className="md:col-span-full flex flex-wrap gap-2 justify-end md:justify-start mt-2">
+                      <Button variant="outline" size="icon" onClick={() => atualizarCanal(canal)} disabled={loading} aria-label="Salvar">
+                        <Save className="w-4 h-4" />
                       </Button>
-                      <Button variant="destructive" onClick={() => removerCanal(canal.id)} disabled={loading}>
-                        <Trash2 className="w-4 h-4 mr-2" /> Remover
+                      <Button variant="destructive" size="icon" onClick={() => removerCanal(canal.id)} disabled={loading} aria-label="Remover">
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -313,8 +313,8 @@ export default function GestaoCanais() {
                     <div className="text-sm text-muted-foreground">Subcanais</div>
 
                     {/* Form novo subcanal */}
-                    <div className="grid gap-3 md:grid-cols-5 items-end">
-                      <div className="md:col-span-2">
+                    <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_auto_auto_auto] items-end">
+                      <div>
                         <Label>Nome</Label>
                         <Input
                           placeholder="Ex: Newsletter, Promoções"
@@ -350,8 +350,8 @@ export default function GestaoCanais() {
                     {/* Lista de subcanais existentes */}
                     <div className="space-y-3">
                       {(groupedSubcanais[canal.id] || []).map((sub) => (
-                        <div key={sub.id} className="grid gap-3 md:grid-cols-5 items-end">
-                          <div className="md:col-span-2">
+                        <div key={sub.id} className="grid gap-3 md:grid-cols-[minmax(0,2fr)_auto_auto_auto] items-end">
+                          <div>
                             <Label>Nome</Label>
                             <Input className="w-4/5" value={sub.nome} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, nome: e.target.value } : s)))} />
                           </div>
@@ -368,12 +368,12 @@ export default function GestaoCanais() {
                             <Input type="number" className="w-24" value={sub.ordem ?? 0} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, ordem: Number(e.target.value) } : s)))} />
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" onClick={() => atualizarSubcanal(sub)} disabled={loading}>
-                              <Save className="w-4 h-4 mr-2" /> Salvar
-                            </Button>
-                            <Button variant="destructive" onClick={() => removerSubcanal(sub.id)} disabled={loading}>
-                              <Trash2 className="w-4 h-4 mr-2" /> Remover
-                            </Button>
+                              <Button variant="outline" size="icon" onClick={() => atualizarSubcanal(sub)} disabled={loading} aria-label="Salvar">
+                                <Save className="w-4 h-4" />
+                              </Button>
+                              <Button variant="destructive" size="icon" onClick={() => removerSubcanal(sub.id)} disabled={loading} aria-label="Remover">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                           </div>
                         </div>
                       ))}
