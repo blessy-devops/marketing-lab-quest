@@ -24,6 +24,7 @@ import { Form, FormField, FormItem, FormControl, FormLabel, FormDescription, For
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import { UnitSelector } from "@/components/forms/UnitSelector";
 
 interface FormData {
   nome: string;
@@ -702,9 +703,9 @@ export default function EditExperiment() {
                   </div>
                   <div className="space-y-2">
                     <Label>Unidade</Label>
-                    <Input
-                      placeholder="Ex: %, R$, unidades"
-                      {...form.register(`metricas.${index}.unidade`)}
+                    <UnitSelector
+                      value={form.watch(`metricas.${index}.unidade`)}
+                      onChange={(v) => form.setValue(`metricas.${index}.unidade`, v)}
                     />
                   </div>
                 </div>

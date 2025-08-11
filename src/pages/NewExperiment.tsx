@@ -33,6 +33,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import { UnitSelector } from "@/components/forms/UnitSelector";
 
 interface FormData {
   tipoCadastro: 'futuro' | 'realizado';
@@ -843,7 +844,7 @@ export default function NewExperiment() {
                         <FormItem>
                           <FormLabel>Unidade</FormLabel>
                           <FormControl>
-                            <Input placeholder="%" {...field} />
+                            <UnitSelector value={field.value || ""} onChange={field.onChange} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
