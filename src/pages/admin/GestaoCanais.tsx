@@ -233,7 +233,7 @@ export default function GestaoCanais() {
         <CardContent className="space-y-6">
           {/* Novo Canal */}
           <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_auto_auto_auto] items-end">
-            <div>
+            <div className="min-w-[200px] max-w-[630px] w-full">
               <Label>Nome</Label>
               <Input placeholder="Ex: Email, Social, SEO" value={novoCanal.nome} onChange={(e) => setNovoCanal({ ...novoCanal, nome: e.target.value })} />
             </div>
@@ -278,7 +278,7 @@ export default function GestaoCanais() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto_auto] md:items-end">
-                    <div>
+                    <div className="min-w-[200px] max-w-[630px] w-full">
                       <Label>Nome</Label>
                       <Input value={canal.nome} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, nome: e.target.value } : c)))} />
                     </div>
