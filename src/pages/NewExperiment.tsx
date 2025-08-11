@@ -392,19 +392,6 @@ export default function NewExperiment() {
           </Card>
 
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Canais */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Canais *</CardTitle>
-                <CardDescription>
-                  Selecione os canais onde o experimento será executado
-                </CardDescription>
-              </CardHeader>
-               <CardContent>
-                <CanaisSelector control={form.control} />
-              </CardContent>
-            </Card>
-
             {/* Informações Básicas */}
             <Card>
               <CardHeader>
@@ -546,6 +533,19 @@ export default function NewExperiment() {
               </CardContent>
             </Card>
 
+            {/* Canais */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Canais *</CardTitle>
+                <CardDescription>
+                  Selecione os canais onde o experimento será executado
+                </CardDescription>
+              </CardHeader>
+               <CardContent>
+                <CanaisSelector control={form.control} />
+              </CardContent>
+            </Card>
+          </div>
 
             {/* Hipótese */}
             <Card>
@@ -574,7 +574,6 @@ export default function NewExperiment() {
                 />
               </CardContent>
             </Card>
-          </div>
 
           {/* Configurações Avançadas */}
           <Card>
