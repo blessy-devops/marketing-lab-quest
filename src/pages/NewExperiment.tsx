@@ -772,7 +772,7 @@ export default function NewExperiment() {
             <CardContent className="space-y-4">
               {metricasFields.map((field, index) => (
                 <div key={field.id} className="flex gap-4 items-end">
-                  <div className="flex-1 min-w-0 md:max-w-[45%]">
+                  <div className="flex-1">
                     <FormField
                       control={form.control}
                       name={`metricas.${index}.nome`}
@@ -836,7 +836,7 @@ export default function NewExperiment() {
                       )}
                     />
                   </div>
-                  <div className="w-36">
+                  <div className="w-28">
                     <FormField
                       control={form.control}
                       name={`metricas.${index}.unidade`}
