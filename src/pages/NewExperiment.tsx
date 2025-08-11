@@ -642,46 +642,6 @@ export default function NewExperiment() {
                           )}
                         />
 
-                        {/* Gerar Playbook */}
-                        <FormField
-                          control={form.control}
-                          name="gerar_playbook"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                  disabled={status !== 'concluido'}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className={cn(
-                                  "flex items-center gap-2",
-                                  status !== 'concluido' && "text-muted-foreground"
-                                )}>
-                                  <BookOpen className="w-4 h-4 text-green-600" />
-                                  Gerar playbook deste experimento
-                                </FormLabel>
-                                <FormDescription>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="text-xs cursor-help border-b border-dotted">
-                                        {status !== 'concluido' 
-                                          ? "Disponível apenas para experimentos concluídos"
-                                          : "Transformar em playbook reutilizável"
-                                        }
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Cria um modelo reutilizável baseado neste experimento bem-sucedido</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </FormDescription>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
                       </div>
                     </div>
 
