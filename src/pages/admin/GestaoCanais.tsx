@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Plus, Save, Trash2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { IconPicker, NamedIcon } from "@/components/ui/icon-picker";
 
 interface Canal {
   id: string;
@@ -236,8 +238,12 @@ export default function GestaoCanais() {
               <Input placeholder="Ex: Email, Social, SEO" value={novoCanal.nome} onChange={(e) => setNovoCanal({ ...novoCanal, nome: e.target.value })} />
             </div>
             <div>
-              <Label>Ícone (opcional)</Label>
-              <Input placeholder="Ex: mail, instagram" value={novoCanal.icone} onChange={(e) => setNovoCanal({ ...novoCanal, icone: e.target.value })} />
+              <Label>Ícone</Label>
+              <IconPicker
+                value={novoCanal.icone || ""}
+                onChange={(name) => setNovoCanal({ ...novoCanal, icone: name })}
+                triggerLabel="Escolher ícone"
+              />
             </div>
             <div>
               <Label>Ordem</Label>
@@ -257,108 +263,128 @@ export default function GestaoCanais() {
           <Separator />
 
           {/* Lista de canais */}
-          <div className="space-y-6">
+          <Accordion type="multiple" className="space-y-2">
             {canais.map((canal) => (
-              <div key={canal.id} className="rounded-lg border p-4">
-                <div className="grid gap-3 md:grid-cols-6 md:items-end">
-                  <div className="md:col-span-2">
-                    <Label>Nome</Label>
-                    <Input value={canal.nome} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, nome: e.target.value } : c)))} />
+              <AccordionItem key={canal.id} value={canal.id} className="rounded-lg border">
+                <AccordionTrigger className="px-4 py-3">
+                  <div className="flex items-center gap-3 text-left">
+                    {canal.icone ? (
+                      <NamedIcon name={canal.icone} className="h-5 w-5" />
+                    ) : (
+                      <div className="h-5 w-5 rounded bg-muted" />
+                    )}
+                    <span className="text-base font-medium truncate">{canal.nome || "Sem nome"}</span>
                   </div>
-                  <div>
-                    <Label>Ícone</Label>
-                    <Input value={canal.icone || ""} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, icone: e.target.value } : c)))} />
-                  </div>
-                  <div>
-                    <Label>Ordem</Label>
-                    <Input type="number" value={canal.ordem ?? 0} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, ordem: Number(e.target.value) } : c)))} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={canal.ativo} onCheckedChange={(v) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, ativo: v } : c)))} />
-                    <span className="text-sm">Ativo</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => atualizarCanal(canal)} disabled={loading}>
-                      <Save className="w-4 h-4 mr-2" /> Salvar
-                    </Button>
-                    <Button variant="destructive" onClick={() => removerCanal(canal.id)} disabled={loading}>
-                      <Trash2 className="w-4 h-4 mr-2" /> Remover
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Subcanais do canal */}
-                <div className="mt-4 space-y-4">
-                  <div className="text-sm text-muted-foreground">Subcanais</div>
-
-                  {/* Form novo subcanal */}
-                  <div className="grid gap-3 md:grid-cols-5 items-end">
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="grid gap-3 md:grid-cols-6 md:items-end">
                     <div className="md:col-span-2">
                       <Label>Nome</Label>
-                      <Input
-                        placeholder="Ex: Newsletter, Promoções"
-                        value={novosSubcanais[canal.id]?.nome || ""}
-                        onChange={(e) => setNovosSubcanais((old) => ({ ...old, [canal.id]: { ...(old[canal.id] || { nome: "", icone: "", ordem: 0 }), nome: e.target.value } }))}
-                      />
+                      <Input value={canal.nome} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, nome: e.target.value } : c)))} />
                     </div>
-                    <div>
+                    <div className="md:col-span-2">
                       <Label>Ícone</Label>
-                      <Input
-                        placeholder="Ex: send"
-                        value={novosSubcanais[canal.id]?.icone || ""}
-                        onChange={(e) => setNovosSubcanais((old) => ({ ...old, [canal.id]: { ...(old[canal.id] || { nome: "", icone: "", ordem: 0 }), icone: e.target.value } }))}
+                      <IconPicker
+                        value={canal.icone || ""}
+                        onChange={(name) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, icone: name } : c)))}
+                        triggerLabel="Escolher ícone"
                       />
                     </div>
                     <div>
                       <Label>Ordem</Label>
-                      <Input
-                        type="number"
-                        value={novosSubcanais[canal.id]?.ordem ?? 0}
-                        onChange={(e) => setNovosSubcanais((old) => ({ ...old, [canal.id]: { ...(old[canal.id] || { nome: "", icone: "", ordem: 0 }), ordem: Number(e.target.value) } }))}
-                      />
+                      <Input type="number" value={canal.ordem ?? 0} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, ordem: Number(e.target.value) } : c)))} />
                     </div>
-                    <div>
-                      <Button onClick={() => adicionarSubcanal(canal.id)} disabled={loading} className="w-full">
-                        <Plus className="w-4 h-4 mr-2" /> Adicionar
+                    <div className="flex items-center gap-2">
+                      <Switch checked={canal.ativo} onCheckedChange={(v) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, ativo: v } : c)))} />
+                      <span className="text-sm">Ativo</span>
+                    </div>
+                    <div className="md:col-span-6 flex flex-wrap gap-2 justify-end md:justify-start mt-2">
+                      <Button variant="outline" onClick={() => atualizarCanal(canal)} disabled={loading}>
+                        <Save className="w-4 h-4 mr-2" /> Salvar
+                      </Button>
+                      <Button variant="destructive" onClick={() => removerCanal(canal.id)} disabled={loading}>
+                        <Trash2 className="w-4 h-4 mr-2" /> Remover
                       </Button>
                     </div>
                   </div>
 
-                  {/* Lista de subcanais existentes */}
-                  <div className="space-y-3">
-                    {(groupedSubcanais[canal.id] || []).map((sub) => (
-                      <div key={sub.id} className="grid gap-3 md:grid-cols-5 items-end">
-                        <div className="md:col-span-2">
-                          <Label>Nome</Label>
-                          <Input value={sub.nome} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, nome: e.target.value } : s)))} />
-                        </div>
-                        <div>
-                          <Label>Ícone</Label>
-                          <Input value={sub.icone || ""} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, icone: e.target.value } : s)))} />
-                        </div>
-                        <div>
-                          <Label>Ordem</Label>
-                          <Input type="number" value={sub.ordem ?? 0} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, ordem: Number(e.target.value) } : s)))} />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" onClick={() => atualizarSubcanal(sub)} disabled={loading}>
-                            <Save className="w-4 h-4 mr-2" /> Salvar
-                          </Button>
-                          <Button variant="destructive" onClick={() => removerSubcanal(sub.id)} disabled={loading}>
-                            <Trash2 className="w-4 h-4 mr-2" /> Remover
-                          </Button>
-                        </div>
+                  {/* Subcanais do canal */}
+                  <div className="mt-6 space-y-4">
+                    <div className="text-sm text-muted-foreground">Subcanais</div>
+
+                    {/* Form novo subcanal */}
+                    <div className="grid gap-3 md:grid-cols-5 items-end">
+                      <div className="md:col-span-2">
+                        <Label>Nome</Label>
+                        <Input
+                          placeholder="Ex: Newsletter, Promoções"
+                          value={novosSubcanais[canal.id]?.nome || ""}
+                          onChange={(e) => setNovosSubcanais((old) => ({ ...old, [canal.id]: { ...(old[canal.id] || { nome: "", icone: "", ordem: 0 }), nome: e.target.value } }))}
+                        />
                       </div>
-                    ))}
+                      <div>
+                        <Label>Ícone</Label>
+                        <IconPicker
+                          value={novosSubcanais[canal.id]?.icone || ""}
+                          onChange={(name) => setNovosSubcanais((old) => ({ ...old, [canal.id]: { ...(old[canal.id] || { nome: "", icone: "", ordem: 0 }), icone: name } }))}
+                          triggerLabel="Escolher ícone"
+                        />
+                      </div>
+                      <div>
+                        <Label>Ordem</Label>
+                        <Input
+                          type="number"
+                          value={novosSubcanais[canal.id]?.ordem ?? 0}
+                          onChange={(e) => setNovosSubcanais((old) => ({ ...old, [canal.id]: { ...(old[canal.id] || { nome: "", icone: "", ordem: 0 }), ordem: Number(e.target.value) } }))}
+                        />
+                      </div>
+                      <div>
+                        <Button onClick={() => adicionarSubcanal(canal.id)} disabled={loading} className="w-full">
+                          <Plus className="w-4 h-4 mr-2" /> Adicionar
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Lista de subcanais existentes */}
+                    <div className="space-y-3">
+                      {(groupedSubcanais[canal.id] || []).map((sub) => (
+                        <div key={sub.id} className="grid gap-3 md:grid-cols-5 items-end">
+                          <div className="md:col-span-2">
+                            <Label>Nome</Label>
+                            <Input value={sub.nome} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, nome: e.target.value } : s)))} />
+                          </div>
+                          <div>
+                            <Label>Ícone</Label>
+                            <IconPicker
+                              value={sub.icone || ""}
+                              onChange={(name) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, icone: name } : s)))}
+                              triggerLabel="Escolher ícone"
+                            />
+                          </div>
+                          <div>
+                            <Label>Ordem</Label>
+                            <Input type="number" value={sub.ordem ?? 0} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, ordem: Number(e.target.value) } : s)))} />
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" onClick={() => atualizarSubcanal(sub)} disabled={loading}>
+                              <Save className="w-4 h-4 mr-2" /> Salvar
+                            </Button>
+                            <Button variant="destructive" onClick={() => removerSubcanal(sub.id)} disabled={loading}>
+                              <Trash2 className="w-4 h-4 mr-2" /> Remover
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </div>
+                </AccordionContent>
+              </AccordionItem>
             ))}
 
             {canais.length === 0 && (
-              <div className="text-sm text-muted-foreground">Nenhum canal cadastrado ainda.</div>
+              <div className="text-sm text-muted-foreground px-1">Nenhum canal cadastrado ainda.</div>
             )}
-          </div>
+          </Accordion>
         </CardContent>
       </Card>
     </div>
