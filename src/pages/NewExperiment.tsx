@@ -1,5 +1,5 @@
 import { useForm, useFieldArray } from "react-hook-form";
-import { ArrowLeft, Save, Play, Plus, X, CalendarIcon, Upload, Link2, RadioIcon, CheckCircle, XCircle, Brain, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Save, Play, Plus, X, CalendarIcon, Upload, Link2, RadioIcon, Star, Brain, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,12 +60,12 @@ interface FormData {
     descricao?: string;
   }>;
   // Campos de resultado para experimentos já realizados
-  sucesso?: boolean;
-  roi?: number;
+  rating?: number;
   fatos?: string;
   causas?: string;
   acoes?: string;
   aprendizados?: string;
+  // Configurações de IA
   // Configurações de IA
   base_conhecimento?: boolean;
   gerar_playbook?: boolean;
@@ -128,8 +128,7 @@ export default function NewExperiment() {
       hipotese: "",
       metricas: [{ nome: "", valor: 0, unidade: "", baseline: undefined }],
       anexos: [],
-      sucesso: undefined,
-      roi: undefined,
+      rating: undefined,
       fatos: "",
       causas: "",
       acoes: "",
@@ -192,8 +191,8 @@ export default function NewExperiment() {
         toast.error('Datas devem ser passadas para experimentos já realizados');
         return;
       }
-      if (data.sucesso === undefined) {
-        toast.error('Informe se o experimento foi bem-sucedido');
+      if (data.rating === undefined) {
+        toast.error('Dê uma nota de 1 a 5 estrelas para o experimento');
         return;
       }
     }
@@ -271,8 +270,7 @@ export default function NewExperiment() {
           .from('resultados')
           .insert({
             experimento_id: novoExperimento.id,
-            sucesso: data.sucesso,
-            roi: data.roi,
+            rating: data.rating,
             fatos: data.fatos,
             causas: data.causas,
             acoes: data.acoes,
@@ -885,63 +883,36 @@ export default function NewExperiment() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="sucesso"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel>O experimento foi bem-sucedido? *</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={(value) => field.onChange(value === 'true')}
-                            value={field.value?.toString()}
-                            className="flex flex-row space-x-6"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="true" id="sucesso-sim" />
-                              <Label htmlFor="sucesso-sim" className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                Sim
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="false" id="sucesso-nao" />
-                              <Label htmlFor="sucesso-nao" className="flex items-center gap-2">
-                                <XCircle className="h-4 w-4 text-red-600" />
-                                Não
-                              </Label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="roi"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>ROI (Retorno sobre Investimento)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="1.5"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Valor em múltiplos (ex: 1.5 = 150% de retorno)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="rating"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Avaliação (1 a 5 estrelas) *</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => field.onChange(star)}
+                              aria-label={`${star} estrela${star > 1 ? 's' : ''}`}
+                              className="p-1"
+                            >
+                              <Star
+                                className={cn(
+                                  "h-6 w-6",
+                                  (field.value || 0) >= star ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                                )}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <FormField
