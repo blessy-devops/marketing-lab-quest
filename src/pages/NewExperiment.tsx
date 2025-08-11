@@ -419,7 +419,7 @@ export default function NewExperiment() {
                     control={form.control}
                     name="nome"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="md:col-span-2">
                         <FormLabel>Nome do Experimento *</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: Teste A/B - Botão CTA" {...field} />
