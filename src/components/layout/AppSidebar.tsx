@@ -58,7 +58,7 @@ export function AppSidebar() {
       <SidebarContent className="p-3">
         {/* Logo Section */}
         <div className="mb-6 flex items-center justify-center group-data-[collapsible=icon]:justify-center">
-          <div className="flex items-center gap-2 group-data-[collapsible=icon]:gap-0">
+          <div className="flex items-center gap-2 w-full justify-start group-data-[collapsible=icon]:gap-0">
             <img 
               src="/src/assets/blessy-logo.png" 
               alt="Blessy" 
