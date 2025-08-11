@@ -247,7 +247,7 @@ export default function GestaoCanais() {
             </div>
             <div>
               <Label>Ordem</Label>
-              <Input type="number" value={novoCanal.ordem} onChange={(e) => setNovoCanal({ ...novoCanal, ordem: Number(e.target.value) })} />
+              <Input type="number" className="w-24" value={novoCanal.ordem} onChange={(e) => setNovoCanal({ ...novoCanal, ordem: Number(e.target.value) })} />
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
@@ -292,7 +292,7 @@ export default function GestaoCanais() {
                     </div>
                     <div>
                       <Label>Ordem</Label>
-                      <Input type="number" value={canal.ordem ?? 0} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, ordem: Number(e.target.value) } : c)))} />
+                      <Input type="number" className="w-24" value={canal.ordem ?? 0} onChange={(e) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, ordem: Number(e.target.value) } : c)))} />
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch checked={canal.ativo} onCheckedChange={(v) => setCanais((prev) => prev.map((c) => (c.id === canal.id ? { ...c, ativo: v } : c)))} />
@@ -318,6 +318,7 @@ export default function GestaoCanais() {
                         <Label>Nome</Label>
                         <Input
                           placeholder="Ex: Newsletter, Promoções"
+                          className="w-4/5"
                           value={novosSubcanais[canal.id]?.nome || ""}
                           onChange={(e) => setNovosSubcanais((old) => ({ ...old, [canal.id]: { ...(old[canal.id] || { nome: "", icone: "", ordem: 0 }), nome: e.target.value } }))}
                         />
@@ -334,6 +335,7 @@ export default function GestaoCanais() {
                         <Label>Ordem</Label>
                         <Input
                           type="number"
+                          className="w-24"
                           value={novosSubcanais[canal.id]?.ordem ?? 0}
                           onChange={(e) => setNovosSubcanais((old) => ({ ...old, [canal.id]: { ...(old[canal.id] || { nome: "", icone: "", ordem: 0 }), ordem: Number(e.target.value) } }))}
                         />
@@ -351,7 +353,7 @@ export default function GestaoCanais() {
                         <div key={sub.id} className="grid gap-3 md:grid-cols-5 items-end">
                           <div className="md:col-span-2">
                             <Label>Nome</Label>
-                            <Input value={sub.nome} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, nome: e.target.value } : s)))} />
+                            <Input className="w-4/5" value={sub.nome} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, nome: e.target.value } : s)))} />
                           </div>
                           <div>
                             <Label>Ícone</Label>
@@ -363,7 +365,7 @@ export default function GestaoCanais() {
                           </div>
                           <div>
                             <Label>Ordem</Label>
-                            <Input type="number" value={sub.ordem ?? 0} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, ordem: Number(e.target.value) } : s)))} />
+                            <Input type="number" className="w-24" value={sub.ordem ?? 0} onChange={(e) => setSubcanais((prev) => prev.map((s) => (s.id === sub.id ? { ...s, ordem: Number(e.target.value) } : s)))} />
                           </div>
                           <div className="flex flex-wrap gap-2">
                             <Button variant="outline" onClick={() => atualizarSubcanal(sub)} disabled={loading}>
