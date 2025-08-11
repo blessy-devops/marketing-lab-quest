@@ -103,6 +103,36 @@ export type Database = {
         }
         Relationships: []
       }
+      canais: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          icone: string | null
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       canal_tipo_sugestao: {
         Row: {
           canal: string
@@ -748,6 +778,47 @@ export type Database = {
             columns: ["experimento_id"]
             isOneToOne: true
             referencedRelation: "experimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subcanais: {
+        Row: {
+          ativo: boolean
+          canal_id: string
+          created_at: string
+          icone: string | null
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          canal_id: string
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          canal_id?: string
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcanais_canal_id_fkey"
+            columns: ["canal_id"]
+            isOneToOne: false
+            referencedRelation: "canais"
             referencedColumns: ["id"]
           },
         ]
