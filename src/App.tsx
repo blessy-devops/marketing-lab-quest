@@ -33,6 +33,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const Signup = lazy(() => import("@/pages/Signup"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
+const PublicExperiment = lazy(() => import("@/pages/PublicExperiment"));
 
 // Protected Layout Component
 const ProtectedLayout = () => (
@@ -84,6 +85,14 @@ function App() {
                   element={
                     <LazyWrapper>
                       <AcceptInvite />
+                    </LazyWrapper>
+                  }
+                />
+                <Route
+                  path="/share/:token"
+                  element={
+                    <LazyWrapper>
+                      <PublicExperiment />
                     </LazyWrapper>
                   }
                 />
