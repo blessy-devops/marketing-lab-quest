@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit2, Copy, Trash2, Plus, Upload, FileText, Image, Link, Calendar, User, Target, TrendingUp, CheckCircle, XCircle, MessageSquare, History, Send, Edit, X } from "lucide-react";
+import { ArrowLeft, Edit2, Copy, Trash2, Plus, Upload, FileText, Image, Link, Calendar, User, Target, TrendingUp, CheckCircle, XCircle, MessageSquare, History, Send, Edit, X, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RestrictedButton } from "@/components/ui/restricted-button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import { ComentarioItem } from "@/components/ComentarioItem";
 import { TipoExperimentoDisplay } from "@/components/forms/TipoExperimentoDisplay";
 import { FileUpload } from "@/components/anexos/FileUpload";
 import { useAnexos } from "@/hooks/useAnexos";
+import { ShareExperimentDialog } from "@/components/share/ShareExperimentDialog";
 
 type Metrica = Tables<"metricas">;
 
@@ -37,6 +38,7 @@ const ExperimentDetails = () => {
   const [novoComentario, setNovoComentario] = useState("");
   const [editingText, setEditingText] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [openShare, setOpenShare] = useState(false);
   
   // Hook de anexos
   const { anexos, loading: loadingAnexos, setAnexos } = useAnexos(id);
@@ -170,6 +172,7 @@ const ExperimentDetails = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
+      <ShareExperimentDialog open={openShare} onOpenChange={setOpenShare} experimentoId={experimento.id} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -235,6 +238,16 @@ const ExperimentDetails = () => {
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicar
+              </RestrictedButton>
+              <RestrictedButton
+                permission="canEdit"
+                tooltipMessage="Compartilhar experimento via link público"
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenShare(true)}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Compartilhar
               </RestrictedButton>
               <RestrictedButton
                 permission="canDelete"

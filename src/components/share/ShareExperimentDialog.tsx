@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Link as LinkIcon, RefreshCw, Copy as CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 
+const sb: any = supabase as any;
+
 interface ShareExperimentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,7 +36,7 @@ export const ShareExperimentDialog: React.FC<ShareExperimentDialogProps> = ({ op
   const load = React.useCallback(async () => {
     if (!open || !experimentoId) return;
     setLoading(true);
-    const { data, error } = await (supabase as any)
+    const { data, error } = await sb
       .from("experiment_shares")
       .select("id, experimento_id, access_type, link_token, active, expires_at")
       .eq("experimento_id", experimentoId)
@@ -74,7 +76,7 @@ export const ShareExperimentDialog: React.FC<ShareExperimentDialogProps> = ({ op
         active: newAccess === "link",
       } as any;
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await sb
         .from("experiment_shares")
         .upsert(payload as any, { onConflict: "experimento_id" })
         .select()
