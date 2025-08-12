@@ -59,9 +59,14 @@ export const ShareExperimentDialog: React.FC<ShareExperimentDialogProps> = ({ op
   }, [load]);
 
   const buildLink = React.useCallback(() => {
-    if (!row?.link_token) return "";
-    return `${window.location.origin}/share/${row.link_token}`;
-  }, [row?.link_token]);
+    if (access === "restricted") {
+      return `${window.location.origin}/experimentos/${experimentoId}`;
+    }
+    if (row?.link_token) {
+      return `${window.location.origin}/share/${row.link_token}`;
+    }
+    return "";
+  }, [access, experimentoId, row?.link_token]);
 
   const ensureLinkAndSave = async (newAccess: AccessType) => {
     setSaving(true);
@@ -100,7 +105,7 @@ export const ShareExperimentDialog: React.FC<ShareExperimentDialogProps> = ({ op
     setSaving(true);
     try {
       const link_token = crypto.randomUUID();
-      const { data, error } = await (supabase as any)
+      const { data, error } = await sb
         .from("experiment_shares")
         .update({ link_token })
         .eq("experimento_id", experimentoId)
@@ -159,24 +164,28 @@ export const ShareExperimentDialog: React.FC<ShareExperimentDialogProps> = ({ op
               </RadioGroup>
             </div>
 
-            {access === "link" && (
-              <div className="space-y-2">
-                <Label>Link de compartilhamento</Label>
-                <div className="flex items-center gap-2">
-                  <Input readOnly value={buildLink()} className="flex-1" />
-                  <Button variant="outline" size="icon" onClick={copyLink} aria-label="Copiar link">
-                    <CopyIcon className="h-4 w-4" />
-                  </Button>
+            <div className="space-y-2">
+              <Label>{access === "link" ? "Link de compartilhamento" : "Link interno do experimento"}</Label>
+              <div className="flex items-center gap-2">
+                <Input readOnly value={buildLink()} className="flex-1" />
+                <Button variant="outline" size="icon" onClick={copyLink} aria-label="Copiar link">
+                  <CopyIcon className="h-4 w-4" />
+                </Button>
+                {access === "link" && (
                   <Button variant="outline" size="icon" onClick={regenerate} disabled={saving} aria-label="Gerar novo link">
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                   </Button>
-                  <Button onClick={copyLink}>
-                    <LinkIcon className="h-4 w-4 mr-2" /> Copiar
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">Qualquer pessoa com este link poderá visualizar este experimento.</p>
+                )}
+                <Button onClick={copyLink}>
+                  <LinkIcon className="h-4 w-4 mr-2" /> Copiar
+                </Button>
               </div>
-            )}
+              <p className="text-xs text-muted-foreground">
+                {access === "link"
+                  ? "Qualquer pessoa com este link poderá visualizar este experimento."
+                  : "Apenas pessoas com acesso ao sistema poderão abrir este link (login necessário)."}
+              </p>
+            </div>
           </div>
         )}
 
