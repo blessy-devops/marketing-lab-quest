@@ -1,5 +1,5 @@
 import { useForm, useFieldArray } from "react-hook-form";
-import { ArrowLeft, Save, Play, Plus, X, CalendarIcon, Upload, Link2, RadioIcon, Star, Brain, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, CalendarIcon, Star, Brain, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { UnitSelector } from "@/components/forms/UnitSelector";
+import { Stepper, type Step } from "@/components/ui/stepper";
+import { useFormAutoSave } from "@/hooks/useFormAutoSave";
 
 interface FormData {
   tipoCadastro: 'futuro' | 'realizado';
@@ -67,18 +69,10 @@ interface FormData {
   acoes?: string;
   aprendizados?: string;
   // Configurações de IA
-  // Configurações de IA
   base_conhecimento?: boolean;
   gerar_playbook?: boolean;
   tags?: string[];
 }
-
-// Remove old static arrays - now using dynamic data
-// const canaisOptions = [...]
-// const tiposExperimento = [...] 
-
-// Get channel names for compatibility
-const canaisOptions = CANAIS_OPTIONS.map(c => c.value);
 
 export default function NewExperiment() {
   const navigate = useNavigate();
@@ -86,6 +80,17 @@ export default function NewExperiment() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAdvancedConfigOpen, setIsAdvancedConfigOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const steps: Step[] = [
+    { id: "type", title: "Tipo", description: "Tipo de cadastro e experimento" },
+    { id: "basic", title: "Básico", description: "Informações gerais" },
+    { id: "channels", title: "Canais", description: "Canais e hipótese" },
+    { id: "metrics", title: "Métricas", description: "Métricas esperadas/realizadas" },
+    { id: "results", title: "Resultados", description: "Resultados (se realizado)" },
+    { id: "attachments", title: "Anexos", description: "Arquivos e links" },
+    { id: "review", title: "Revisar", description: "Revisar e finalizar" }
+  ];
 
   // Aguardar o carregamento antes de verificar permissões
   if (loading) {
@@ -139,6 +144,18 @@ export default function NewExperiment() {
       tags: []
     }
   });
+
+  // Auto-save functionality
+  const { loadFromStorage, clearStorage } = useFormAutoSave(
+    form, 
+    'new-experiment-draft',
+    2000 // Save after 2 seconds of inactivity
+  );
+
+  // Load saved data on mount
+  useEffect(() => {
+    loadFromStorage();
+  }, [loadFromStorage]);
 
   const { fields: metricasFields, append: appendMetrica, remove: removeMetrica } = useFieldArray({
     control: form.control,
@@ -344,6 +361,7 @@ export default function NewExperiment() {
       }
 
       toast.success('Experimento criado com sucesso!');
+      clearStorage(); // Clear saved draft
       navigate(`/experimentos/${novoExperimento.id}`);
       
     } catch (error) {
@@ -354,8 +372,41 @@ export default function NewExperiment() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     form.handleSubmit(onSubmit)();
+  };
+
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const canProceedToNextStep = () => {
+    const values = form.getValues();
+    switch (currentStep) {
+      case 0: // Type
+        return values.tipoCadastro;
+      case 1: // Basic Info
+        return values.nome && values.tipo_experimento_id;
+      case 2: // Channels
+        return values.canais.length > 0 && values.hipotese;
+      case 3: // Metrics
+        return values.metricas.some(m => m.nome);
+      case 4: // Results (only for realized experiments)
+        return tipoCadastro === 'futuro' || (values.rating !== undefined);
+      case 5: // Attachments
+        return true; // Optional step
+      default:
+        return true;
+    }
   };
 
   const addTag = (tag: string) => {
@@ -392,62 +443,78 @@ export default function NewExperiment() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
-            <Save className="w-4 h-4 mr-2" />
-            {tipoCadastro === 'realizado' ? 'Salvar Experimento' : 'Criar Experimento'}
-          </Button>
+          {currentStep === steps.length - 1 ? (
+            <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
+              <Save className="w-4 h-4 mr-2" />
+              {tipoCadastro === 'realizado' ? 'Salvar Experimento' : 'Criar Experimento'}
+            </Button>
+          ) : (
+            <Button 
+              type="button" 
+              onClick={nextStep} 
+              disabled={!canProceedToNextStep()}
+            >
+              Próximo
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
         </div>
       </div>
 
-      <Form {...form}>
-        <form className="space-y-6">
-          {/* Tipo de Cadastro */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tipo de Cadastro</CardTitle>
-              <CardDescription>
-                Escolha se está criando um experimento futuro ou documentando um já realizado
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="tipoCadastro"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-2"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="futuro" id="futuro" />
-                          <Label htmlFor="futuro" className="font-normal">
-                            Experimento futuro (padrão)
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="realizado" id="realizado" />
-                          <Label htmlFor="realizado" className="font-normal">
-                            Experimento já realizado
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    {tipoCadastro === 'realizado' && (
-                      <FormDescription className="text-sm text-muted-foreground">
-                        Use esta opção para documentar experimentos anteriores
-                      </FormDescription>
-                    )}
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+      {/* Stepper */}
+      <Stepper steps={steps} currentStep={currentStep} />
 
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Informações Básicas */}
+      <Form {...form}>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Step 0: Tipo de Cadastro */}
+          {currentStep === 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Tipo de Cadastro</CardTitle>
+                <CardDescription>
+                  Escolha se está criando um experimento futuro ou documentando um já realizado
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="tipoCadastro"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-2"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="futuro" id="futuro" />
+                            <Label htmlFor="futuro" className="font-normal">
+                              Experimento futuro (padrão)
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="realizado" id="realizado" />
+                            <Label htmlFor="realizado" className="font-normal">
+                              Experimento já realizado
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      {tipoCadastro === 'realizado' && (
+                        <FormDescription className="text-sm text-muted-foreground">
+                          Use esta opção para documentar experimentos anteriores
+                        </FormDescription>
+                      )}
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 1: Informações Básicas */}
+          {currentStep === 1 && (
             <Card>
               <CardHeader>
                 <CardTitle>Informações Básicas</CardTitle>
@@ -471,7 +538,6 @@ export default function NewExperiment() {
                     )}
                   />
 
-                  {/* Novo Seletor de Tipos Dinâmicos */}
                   <div className="md:col-span-2">
                     <TipoExperimentoSelector 
                       control={form.control} 
@@ -586,337 +652,334 @@ export default function NewExperiment() {
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            {/* Canais */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Canais *</CardTitle>
-                <CardDescription>
-                  Selecione os canais onde o experimento será executado
-                </CardDescription>
-              </CardHeader>
-               <CardContent>
-                <CanaisSelector control={form.control} />
-              </CardContent>
-            </Card>
-          </div>
-
-            {/* Hipótese */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Hipótese *</CardTitle>
-                <CardDescription>
-                  Descreva sua hipótese para o experimento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FormField
-                  control={form.control}
-                  name="hipotese"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Se fizermos X, esperamos que Y aconteça porque Z"
-                          rows={4}
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-          {/* Configurações Avançadas */}
-          <Card>
-            <Collapsible open={isAdvancedConfigOpen} onOpenChange={setIsAdvancedConfigOpen}>
-              <CardHeader>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="flex items-center justify-between w-full p-0 h-auto">
-                    <div className="text-left">
-                      <CardTitle className="flex items-center gap-2">
-                        <Brain className="w-5 h-5 text-blue-600" />
-                        Configurações Avançadas
-                      </CardTitle>
-                      <CardDescription>
-                        Configure integrações com IA e tags de categorização
-                      </CardDescription>
-                    </div>
-                    {isAdvancedConfigOpen ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
-              </CardHeader>
-              <CollapsibleContent>
-                <CardContent className="space-y-6">
-                  <TooltipProvider>
-                    {/* Configurações de IA */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
-                        Configurações de IA
-                      </h4>
-                      
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {/* Base de Conhecimento */}
-                        <FormField
-                          control={form.control}
-                          name="base_conhecimento"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="flex items-center gap-2">
-                                  <Brain className="w-4 h-4 text-blue-600" />
-                                  Incluir na base de conhecimento da IA
-                                </FormLabel>
-                                <FormDescription>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="text-xs cursor-help border-b border-dotted">
-                                        Este experimento será usado pelo Oráculo para gerar insights
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Experimentos marcados são analisados pela IA para identificar padrões e gerar insights automaticamente</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </FormDescription>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-
-                      </div>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
-                        Tags de Categorização
-                      </h4>
-                      
-                      <div className="space-y-3">
-                        <FormField
-                          control={form.control}
-                          name="tags"
-                          render={() => (
-                            <FormItem>
-                              <FormLabel>Tags do Experimento</FormLabel>
-                              <div className="space-y-3">
-                                {/* Tags existentes */}
-                                {tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-2">
-                                    {tags.map((tag, index) => (
-                                      <Badge 
-                                        key={index} 
-                                        variant="secondary" 
-                                        className="flex items-center gap-1"
-                                      >
-                                        #{tag}
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                                          onClick={() => removeTag(tag)}
-                                        >
-                                          <X className="w-3 h-3" />
-                                        </Button>
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {/* Input para nova tag */}
-                                <div className="flex gap-2">
-                                  <Input
-                                    placeholder="Adicione tags: promoção, urgência, lançamento..."
-                                    value={tagInput}
-                                    onChange={(e) => setTagInput(e.target.value)}
-                                    onKeyDown={handleTagInputKeyDown}
-                                    disabled={tags.length >= 5}
-                                    className="flex-1"
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => addTag(tagInput.trim())}
-                                    disabled={!tagInput.trim() || tags.length >= 5}
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </Button>
-                                </div>
-
-                                {/* Sugestões de tags */}
-                                <div className="space-y-2">
-                                  <p className="text-xs text-muted-foreground">Sugestões:</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {tagSuggestions
-                                      .filter(suggestion => !tags.includes(suggestion))
-                                      .slice(0, 8)
-                                      .map((suggestion) => (
-                                        <Button
-                                          key={suggestion}
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-xs h-6 px-2"
-                                          onClick={() => addTag(suggestion)}
-                                          disabled={tags.length >= 5}
-                                        >
-                                          #{suggestion}
-                                        </Button>
-                                      ))}
-                                  </div>
-                                </div>
-
-                                <FormDescription className="text-xs">
-                                  Máximo 5 tags por experimento. Use tags para categorizar e encontrar experimentos similares.
-                                </FormDescription>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  </TooltipProvider>
+          {/* Step 2: Channels & Hypothesis */}
+          {currentStep === 2 && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Canais *</CardTitle>
+                  <CardDescription>
+                    Selecione os canais onde o experimento será executado
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CanaisSelector control={form.control} />
                 </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+              </Card>
 
-          {/* Métricas Esperadas */}
-          <Card>
-            <CardHeader>
-            <CardTitle>
-              {tipoCadastro === 'realizado' ? 'Métricas Realizadas *' : 'Métricas Esperadas *'}
-            </CardTitle>
-            <CardDescription>
-              {tipoCadastro === 'realizado' 
-                ? 'Informe os resultados obtidos no experimento'
-                : 'Defina as métricas que serão acompanhadas no experimento'
-              }
-            </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {metricasFields.map((field, index) => (
-                <div key={field.id} className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <FormField
-                      control={form.control}
-                      name={`metricas.${index}.nome`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome da Métrica</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ex: Taxa de conversão" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="w-28">
-                    <FormField
-                      control={form.control}
-                      name={`metricas.${index}.valor`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {tipoCadastro === 'realizado' ? 'Valor Realizado' : 'Valor Esperado'}
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              step="0.01"
-                              placeholder="0.00"
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="w-28">
-                    <FormField
-                      control={form.control}
-                      name={`metricas.${index}.baseline`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {tipoCadastro === 'realizado' ? 'Valor Anterior (opcional)' : 'Valor Atual (opcional)'}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={field.value ?? ''}
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                field.onChange(v === '' ? undefined : parseFloat(v));
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="w-28">
-                    <FormField
-                      control={form.control}
-                      name={`metricas.${index}.unidade`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Unidade</FormLabel>
-                          <FormControl>
-                            <UnitSelector value={field.value || ""} onChange={field.onChange} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  {metricasFields.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => removeMetrica(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => appendMetrica({ nome: "", valor: 0, unidade: "", baseline: undefined })}
-                className="w-full"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Métrica
-              </Button>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Hipótese *</CardTitle>
+                  <CardDescription>
+                    Descreva sua hipótese para o experimento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="hipotese"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Se fizermos X, esperamos que Y aconteça porque Z"
+                            rows={4}
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
 
-          {/* Resultados - apenas para experimentos já realizados */}
-          {tipoCadastro === 'realizado' && (
+              <Card>
+                <Collapsible open={isAdvancedConfigOpen} onOpenChange={setIsAdvancedConfigOpen}>
+                  <CardHeader>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="flex items-center justify-between w-full p-0 h-auto">
+                        <div className="text-left">
+                          <CardTitle className="flex items-center gap-2">
+                            <Brain className="w-5 h-5 text-blue-600" />
+                            Configurações Avançadas
+                          </CardTitle>
+                          <CardDescription>
+                            Configure integrações com IA e tags de categorização
+                          </CardDescription>
+                        </div>
+                        {isAdvancedConfigOpen ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-6">
+                      <TooltipProvider>
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
+                            Configurações de IA
+                          </h4>
+                          
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <FormField
+                              control={form.control}
+                              name="base_conhecimento"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel className="flex items-center gap-2">
+                                      <Brain className="w-4 h-4 text-blue-600" />
+                                      Incluir na base de conhecimento da IA
+                                    </FormLabel>
+                                    <FormDescription>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="text-xs cursor-help border-b border-dotted">
+                                            Este experimento será usado pelo Oráculo para gerar insights
+                                          </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Experimentos marcados são analisados pela IA para identificar padrões e gerar insights automaticamente</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </FormDescription>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
+                            Tags de Categorização
+                          </h4>
+                          
+                          <div className="space-y-3">
+                            <FormField
+                              control={form.control}
+                              name="tags"
+                              render={() => (
+                                <FormItem>
+                                  <FormLabel>Tags do Experimento</FormLabel>
+                                  <div className="space-y-3">
+                                    {tags.length > 0 && (
+                                      <div className="flex flex-wrap gap-2">
+                                        {tags.map((tag, index) => (
+                                          <Badge 
+                                            key={index} 
+                                            variant="secondary" 
+                                            className="flex items-center gap-1"
+                                          >
+                                            #{tag}
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                                              onClick={() => removeTag(tag)}
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </Button>
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    <div className="flex gap-2">
+                                      <Input
+                                        placeholder="Adicione tags: promoção, urgência, lançamento..."
+                                        value={tagInput}
+                                        onChange={(e) => setTagInput(e.target.value)}
+                                        onKeyDown={handleTagInputKeyDown}
+                                        disabled={tags.length >= 5}
+                                        className="flex-1"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => addTag(tagInput.trim())}
+                                        disabled={!tagInput.trim() || tags.length >= 5}
+                                      >
+                                        <Plus className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <p className="text-xs text-muted-foreground">Sugestões:</p>
+                                      <div className="flex flex-wrap gap-1">
+                                        {tagSuggestions
+                                          .filter(suggestion => !tags.includes(suggestion))
+                                          .slice(0, 8)
+                                          .map((suggestion) => (
+                                            <Button
+                                              key={suggestion}
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              className="text-xs h-6 px-2"
+                                              onClick={() => addTag(suggestion)}
+                                              disabled={tags.length >= 5}
+                                            >
+                                              #{suggestion}
+                                            </Button>
+                                          ))}
+                                      </div>
+                                    </div>
+
+                                    <FormDescription className="text-xs">
+                                      Máximo 5 tags por experimento. Use tags para categorizar e encontrar experimentos similares.
+                                    </FormDescription>
+                                  </div>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </TooltipProvider>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
+              </Card>
+            </>
+          )}
+
+          {/* Step 3: Metrics */}
+          {currentStep === 3 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {tipoCadastro === 'realizado' ? 'Métricas Realizadas *' : 'Métricas Esperadas *'}
+                </CardTitle>
+                <CardDescription>
+                  {tipoCadastro === 'realizado' 
+                    ? 'Informe os resultados obtidos no experimento'
+                    : 'Defina as métricas que serão acompanhadas no experimento'
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {metricasFields.map((field, index) => (
+                  <div key={field.id} className="flex gap-4 items-end">
+                    <div className="flex-1">
+                      <FormField
+                        control={form.control}
+                        name={`metricas.${index}.nome`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome da Métrica</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: Taxa de conversão" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="w-28">
+                      <FormField
+                        control={form.control}
+                        name={`metricas.${index}.valor`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {tipoCadastro === 'realizado' ? 'Valor Realizado' : 'Valor Esperado'}
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.01"
+                                placeholder="0.00"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="w-28">
+                      <FormField
+                        control={form.control}
+                        name={`metricas.${index}.baseline`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {tipoCadastro === 'realizado' ? 'Valor Anterior (opcional)' : 'Valor Atual (opcional)'}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={field.value ?? ''}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  field.onChange(v === '' ? undefined : parseFloat(v));
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="w-28">
+                      <FormField
+                        control={form.control}
+                        name={`metricas.${index}.unidade`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Unidade</FormLabel>
+                            <FormControl>
+                              <UnitSelector value={field.value || ""} onChange={field.onChange} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    {metricasFields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeMetrica(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => appendMetrica({ nome: "", valor: 0, unidade: "", baseline: undefined })}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Métrica
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 4: Results (only for realized experiments) */}
+          {currentStep === 4 && tipoCadastro === 'realizado' && (
             <Card>
               <CardHeader>
                 <CardTitle>Resultados do Experimento</CardTitle>
@@ -1035,117 +1098,195 @@ export default function NewExperiment() {
             </Card>
           )}
 
-          {/* Anexos */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Anexos</CardTitle>
-              <CardDescription>
-                Adicione imagens, documentos ou links de referência para o experimento
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {anexosFields.map((field, index) => (
-                <div key={field.id} className="space-y-4 p-4 border rounded-lg">
-                  <div className="flex gap-4">
-                    <div className="w-32">
-                      <FormField
-                        control={form.control}
-                        name={`anexos.${index}.tipo`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tipo</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Tipo" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="imagem">Imagem</SelectItem>
-                                <SelectItem value="link">Link</SelectItem>
-                                <SelectItem value="documento">Documento</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      {form.watch(`anexos.${index}.tipo`) === 'link' ? (
+          {/* Step 5: Attachments */}
+          {currentStep === 5 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Anexos</CardTitle>
+                <CardDescription>
+                  Adicione imagens, documentos ou links de referência para o experimento
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {anexosFields.map((field, index) => (
+                  <div key={field.id} className="space-y-4 p-4 border rounded-lg">
+                    <div className="flex gap-4">
+                      <div className="w-32">
                         <FormField
                           control={form.control}
-                          name={`anexos.${index}.url`}
+                          name={`anexos.${index}.tipo`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>URL</FormLabel>
-                              <FormControl>
-                                <Input placeholder="https://..." {...field} />
-                              </FormControl>
+                              <FormLabel>Tipo</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Tipo" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="imagem">Imagem</SelectItem>
+                                  <SelectItem value="link">Link</SelectItem>
+                                  <SelectItem value="documento">Documento</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      ) : (
-                        <FormField
-                          control={form.control as any}
-                          name={`anexos.${index}.file` as any}
-                          render={() => (
-                            <FormItem>
-                              <FormLabel>Arquivo</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="file"
-                                  accept=".jpg,.jpeg,.png,.gif,.pdf,.xlsx,.xls,.csv,.doc,.docx,.ppt,.pptx,.txt"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0] || null;
-                                    form.setValue(`anexos.${index}.file` as any, file);
-                                    form.setValue(`anexos.${index}.url` as any, '');
-                                  }}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
+                      </div>
+                      <div className="flex-1">
+                        {form.watch(`anexos.${index}.tipo`) === 'link' ? (
+                          <FormField
+                            control={form.control}
+                            name={`anexos.${index}.url`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>URL</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="https://..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ) : (
+                          <FormField
+                            control={form.control as any}
+                            name={`anexos.${index}.file` as any}
+                            render={() => (
+                              <FormItem>
+                                <FormLabel>Arquivo</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="file"
+                                    accept=".jpg,.jpeg,.png,.gif,.pdf,.xlsx,.xls,.csv,.doc,.docx,.ppt,.pptx,.txt"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0] || null;
+                                      form.setValue(`anexos.${index}.file` as any, file);
+                                      form.setValue(`anexos.${index}.url` as any, '');
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeAnexo(index)}
+                        className="mt-8"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => removeAnexo(index)}
-                      className="mt-8"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    <FormField
+                      control={form.control}
+                      name={`anexos.${index}.descricao`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descrição (opcional)</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Descrição do anexo..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <FormField
-                    control={form.control}
-                    name={`anexos.${index}.descricao`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Descrição (opcional)</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Descrição do anexo..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => appendAnexo({ tipo: "link", url: "", descricao: "" })}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Anexo
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 6: Review */}
+          {currentStep === 6 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Revisar Experimento</CardTitle>
+                <CardDescription>
+                  Revise todas as informações antes de finalizar o experimento
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label className="font-semibold">Nome:</Label>
+                    <p>{form.watch('nome') || 'Não informado'}</p>
+                  </div>
+                  <div>
+                    <Label className="font-semibold">Responsável:</Label>
+                    <p>{form.watch('responsavel') || 'Não informado'}</p>
+                  </div>
+                  <div>
+                    <Label className="font-semibold">Canais:</Label>
+                    <p>{form.watch('canais')?.join(', ') || 'Nenhum selecionado'}</p>
+                  </div>
+                  <div>
+                    <Label className="font-semibold">Status:</Label>
+                    <p>{form.watch('status')}</p>
+                  </div>
                 </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => appendAnexo({ tipo: "link", url: "", descricao: "" })}
-                className="w-full"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Anexo
-              </Button>
-            </CardContent>
-          </Card>
+                <div>
+                  <Label className="font-semibold">Hipótese:</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {form.watch('hipotese') || 'Não informado'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="font-semibold">Métricas:</Label>
+                  <div className="text-sm">
+                    {form.watch('metricas')?.filter(m => m.nome).map((metrica, i) => (
+                      <div key={i}>• {metrica.nome}: {metrica.valor} {metrica.unidade}</div>
+                    )) || 'Nenhuma métrica definida'}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Navigation */}
+          <div className="flex justify-between pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={prevStep}
+              disabled={currentStep === 0}
+            >
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              Anterior
+            </Button>
+            <div className="flex gap-2">
+              {currentStep < steps.length - 1 ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={!canProceedToNextStep()}
+                >
+                  Próximo
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              ) : (
+                <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {tipoCadastro === 'realizado' ? 'Salvar Experimento' : 'Criar Experimento'}
+                </Button>
+              )}
+            </div>
+          </div>
         </form>
       </Form>
     </div>
