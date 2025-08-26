@@ -25,10 +25,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { UnitSelector } from "@/components/forms/UnitSelector";
+import { TipoExperimentoSelector } from "@/components/forms/TipoExperimentoSelector";
 
 interface FormData {
   nome: string;
-  tipo: string;
+  tipo_experimento_id?: string;
+  subtipo_experimento_id?: string;
+  subtipo_customizado?: string;
   responsavel?: string;
   data_inicio?: Date;
   data_fim?: Date;
@@ -45,14 +48,6 @@ interface FormData {
   gerar_playbook?: boolean;
   tags?: string[];
 }
-
-const tiposExperimento = [
-  { value: "a-b-test", label: "Teste A/B" },
-  { value: "multivariate", label: "Teste Multivariado" },
-  { value: "split-url", label: "Split URL" },
-  { value: "redirect", label: "Teste de Redirecionamento" },
-  { value: "feature-flag", label: "Feature Flag" }
-];
 
 const statusOptions = [
   { value: "planejado", label: "Planejado" },
@@ -79,7 +74,9 @@ export default function EditExperiment() {
   const form = useForm<FormData>({
     defaultValues: {
       nome: "",
-      tipo: "",
+      tipo_experimento_id: undefined,
+      subtipo_experimento_id: undefined,
+      subtipo_customizado: "",
       responsavel: "",
       status: "planejado",
       canais: [],
@@ -121,7 +118,9 @@ export default function EditExperiment() {
 
       form.reset({
         nome: experimento.nome,
-        tipo: experimento.tipo || "",
+        tipo_experimento_id: (experimento as any).tipo_experimento_id || undefined,
+        subtipo_experimento_id: (experimento as any).subtipo_experimento_id || undefined,
+        subtipo_customizado: (experimento as any).subtipo_customizado || "",
         responsavel: experimento.responsavel || "",
         status: experimento.status || "planejado",
         canais: experimento.canais || [],
@@ -179,7 +178,9 @@ export default function EditExperiment() {
         .from('experimentos')
         .update({
           nome: data.nome,
-          tipo: data.tipo,
+          tipo_experimento_id: data.tipo_experimento_id,
+          subtipo_experimento_id: data.subtipo_experimento_id,
+          subtipo_customizado: data.subtipo_customizado,
           responsavel: data.responsavel,
           status: data.status,
           canais: data.canais,
@@ -286,28 +287,8 @@ export default function EditExperiment() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tipo de Experimento</Label>
-                  <Select
-                    value={form.watch("tipo")}
-                    onValueChange={(value) => form.setValue("tipo", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tiposExperimento.map((tipo) => (
-                        <SelectItem key={tipo.value} value={tipo.value}>
-                          {tipo.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.tipo && (
-                    <p className="text-sm text-destructive">{form.formState.errors.tipo.message}</p>
-                  )}
-                </div>
+              <div className="grid grid-cols-1 gap-4">
+                <TipoExperimentoSelector control={form.control} />
 
                 <div className="space-y-2">
                   <Label>Status</Label>

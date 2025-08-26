@@ -43,7 +43,10 @@ export function TipoExperimentoSelector({ control }: TipoExperimentoSelectorProp
         render={({ field }) => (
           <FormItem>
             <FormLabel>Tipo de Experimento *</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select 
+              onValueChange={field.onChange} 
+              value={field.value ?? undefined}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo de experimento" />
               </SelectTrigger>
@@ -90,7 +93,7 @@ export function TipoExperimentoSelector({ control }: TipoExperimentoSelectorProp
           render={({ field }) => (
             <FormItem>
               <FormLabel>Subtipo (Recomendado)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o subtipo (opcional)" />
                 </SelectTrigger>
