@@ -4,22 +4,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useTiposExperimentoAtivos, useSugestoesTipos, TipoComSubtipos } from '@/hooks/useTiposFormulario';
+import { useTiposExperimentoAtivos, TipoComSubtipos } from '@/hooks/useTiposFormulario';
 import { Control, useWatch } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import * as icons from 'lucide-react';
 
 interface TipoExperimentoSelectorProps {
   control: Control<any>;
-  canaisSelecionados?: string[];
 }
 
-export function TipoExperimentoSelector({ control, canaisSelecionados = [] }: TipoExperimentoSelectorProps) {
+export function TipoExperimentoSelector({ control }: TipoExperimentoSelectorProps) {
   const [showOutroSubtipo, setShowOutroSubtipo] = useState(false);
   const [outroSubtipoText, setOutroSubtipoText] = useState('');
   
   const { data: tipos = [], isLoading: loadingTipos } = useTiposExperimentoAtivos();
-  const { data: sugestoes = [] } = useSugestoesTipos(canaisSelecionados);
   
   const tipoSelecionado = useWatch({ control, name: 'tipo_experimento_id' });
   const subtipoSelecionado = useWatch({ control, name: 'subtipo_experimento_id' });
@@ -27,30 +25,11 @@ export function TipoExperimentoSelector({ control, canaisSelecionados = [] }: Ti
   const tipoAtual = tipos.find(t => t.id === tipoSelecionado);
   const subtiposDoTipo = tipoAtual?.subtipos_experimento || [];
   
-  // Get suggested tipos based on channels
-  const tiposSugeridos = new Set(sugestoes.map(s => s.tipos_experimento.id));
-  
   useEffect(() => {
     setShowOutroSubtipo(subtipoSelecionado === 'outro');
   }, [subtipoSelecionado]);
 
-  const getTipoWeight = (tipoId: string): number => {
-    const sugestao = sugestoes.find(s => s.tipos_experimento.id === tipoId);
-    return sugestao?.peso || 0;
-  };
-
-  const sortedTipos = [...tipos].sort((a, b) => {
-    const weightA = getTipoWeight(a.id);
-    const weightB = getTipoWeight(b.id);
-    
-    // Tipos sugeridos primeiro, ordenados por peso
-    if (weightA > 0 && weightB === 0) return -1;
-    if (weightA === 0 && weightB > 0) return 1;
-    if (weightA > 0 && weightB > 0) return weightB - weightA;
-    
-    // Tipos não sugeridos ordenados por ordem
-    return a.ordem - b.ordem;
-  });
+  const sortedTipos = [...tipos].sort((a, b) => a.ordem - b.ordem);
 
   if (loadingTipos) {
     return <div className="text-sm text-muted-foreground">Carregando tipos...</div>;
@@ -73,8 +52,6 @@ export function TipoExperimentoSelector({ control, canaisSelecionados = [] }: Ti
                   const IconComponent = tipo.icone && (icons as any)[tipo.icone] 
                     ? (icons as any)[tipo.icone] 
                     : icons.Package;
-                  const isRecomendado = tiposSugeridos.has(tipo.id);
-                  const peso = getTipoWeight(tipo.id);
                   
                   return (
                     <SelectItem key={tipo.id} value={tipo.id}>
@@ -88,19 +65,6 @@ export function TipoExperimentoSelector({ control, canaisSelecionados = [] }: Ti
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{tipo.nome}</span>
-                            {isRecomendado && (
-                              <Badge 
-                                variant="secondary" 
-                                className="text-xs"
-                                style={{ 
-                                  backgroundColor: `${tipo.cor}15`,
-                                  color: tipo.cor,
-                                  borderColor: `${tipo.cor}30`
-                                }}
-                              >
-                                Recomendado {peso > 1 && `★`.repeat(peso)}
-                              </Badge>
-                            )}
                           </div>
                           {tipo.descricao && (
                             <p className="text-xs text-muted-foreground">
@@ -205,34 +169,6 @@ export function TipoExperimentoSelector({ control, canaisSelecionados = [] }: Ti
         </Card>
       )}
 
-      {/* Informação sobre sugestões */}
-      {canaisSelecionados.length > 0 && sugestoes.length > 0 && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-blue-800 text-sm font-medium mb-1">
-            💡 Sugestões baseadas nos canais selecionados:
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {sugestoes.slice(0, 3).map((sugestao) => (
-              <Badge 
-                key={sugestao.tipos_experimento.id}
-                variant="secondary"
-                className="text-xs"
-                style={{ 
-                  backgroundColor: `${sugestao.tipos_experimento.cor}15`,
-                  color: sugestao.tipos_experimento.cor 
-                }}
-              >
-                {sugestao.tipos_experimento.nome} {`★`.repeat(sugestao.peso)}
-              </Badge>
-            ))}
-            {sugestoes.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{sugestoes.length - 3} mais
-              </Badge>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

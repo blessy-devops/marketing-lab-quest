@@ -475,7 +475,6 @@ export default function NewExperiment() {
                   <div className="md:col-span-2">
                     <TipoExperimentoSelector 
                       control={form.control} 
-                      canaisSelecionados={canaisSelecionados}
                     />
                   </div>
                 </div>

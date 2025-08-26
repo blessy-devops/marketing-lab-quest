@@ -65,7 +65,7 @@ export default function Dashboard() {
       const monthEnd = endOfMonth(date);
       
       const experimentsInMonth = experimentosData.filter(exp => {
-        const expDate = new Date(exp.created_at);
+        const expDate = new Date(exp.data_inicio || exp.created_at);
         return expDate >= monthStart && expDate <= monthEnd;
       }).length;
 
