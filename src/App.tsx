@@ -10,6 +10,14 @@ import { UserProvider } from "@/contexts/UserContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LazyWrapper } from "@/components/ui/lazy-wrapper";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { 
+  DashboardShellSkeleton,
+  ExperimentsListShellSkeleton,
+  ExperimentDetailsShellSkeleton,
+  NewExperimentShellSkeleton,
+  ReportsShellSkeleton,
+  GalleryShellSkeleton
+} from "@/components/ui/page-shell-skeleton";
 
 // Lazy load pages
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -103,7 +111,7 @@ function App() {
                   <Route
                     path="dashboard"
                     element={
-                      <LazyWrapper>
+                      <LazyWrapper fallback={<DashboardShellSkeleton />}>
                         <Dashboard />
                       </LazyWrapper>
                     }
@@ -111,7 +119,7 @@ function App() {
                   <Route
                     path="experimentos"
                     element={
-                      <LazyWrapper>
+                      <LazyWrapper fallback={<ExperimentsListShellSkeleton />}>
                         <ExperimentsList />
                       </LazyWrapper>
                     }
@@ -119,7 +127,7 @@ function App() {
                   <Route
                     path="experimentos/:id"
                     element={
-                      <LazyWrapper>
+                      <LazyWrapper fallback={<ExperimentDetailsShellSkeleton />}>
                         <ExperimentDetails />
                       </LazyWrapper>
                     }
@@ -127,7 +135,7 @@ function App() {
                   <Route
                     path="experimentos/:id/editar"
                     element={
-                      <LazyWrapper>
+                      <LazyWrapper fallback={<NewExperimentShellSkeleton />}>
                         <EditExperiment />
                       </LazyWrapper>
                     }
@@ -135,7 +143,7 @@ function App() {
                   <Route
                     path="experimentos/novo"
                     element={
-                      <LazyWrapper>
+                      <LazyWrapper fallback={<NewExperimentShellSkeleton />}>
                         <NewExperiment />
                       </LazyWrapper>
                     }
@@ -143,7 +151,7 @@ function App() {
                   <Route
                     path="relatorios"
                     element={
-                      <LazyWrapper>
+                      <LazyWrapper fallback={<ReportsShellSkeleton />}>
                         <Reports />
                       </LazyWrapper>
                     }
@@ -151,7 +159,7 @@ function App() {
                   <Route
                     path="galeria"
                     element={
-                      <LazyWrapper>
+                      <LazyWrapper fallback={<GalleryShellSkeleton />}>
                         <Gallery />
                       </LazyWrapper>
                     }

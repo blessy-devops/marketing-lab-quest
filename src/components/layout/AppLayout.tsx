@@ -3,6 +3,7 @@ import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNavigation } from "./MobileBottomNavigation";
+import { TopProgressBar } from "@/components/ui/top-progress-bar";
 import { useNotificationGenerator } from "@/hooks/useNotificationGenerator";
 import { useGlobalShortcuts } from "@/hooks/useKeyboardShortcuts";
 
@@ -23,6 +24,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       open={undefined}
       onOpenChange={undefined}
     >
+      <TopProgressBar />
       <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/30">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
