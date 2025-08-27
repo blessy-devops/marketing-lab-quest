@@ -106,14 +106,14 @@ All colors MUST be HSL.
     /* Dark mode shadows */
     --shadow-elegant: 0 10px 30px -10px hsl(214 100% 60% / 0.3);
     --shadow-glow: 0 0 40px hsl(214 100% 70% / 0.4);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 222 50% 7%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 214 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 222 45% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 35% 16%;
+    --sidebar-ring: 214 100% 60%;
   }
 }
 
