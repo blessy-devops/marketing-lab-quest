@@ -1,36 +1,34 @@
 import { useEffect, useState } from "react";
-import { useNavigation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 export function TopProgressBar() {
-  const navigation = useNavigation();
+  const location = useLocation();
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    if (navigation.state === "loading") {
-      setIsVisible(true);
-      setProgress(0);
-      
-      // Simulate progress
-      const timer = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 90) return prev;
-          return prev + Math.random() * 10;
-        });
-      }, 100);
+    // Trigger on route change
+    setIsVisible(true);
+    setProgress(0);
 
-      return () => clearInterval(timer);
-    } else {
-      if (isVisible) {
-        setProgress(100);
-        setTimeout(() => {
-          setIsVisible(false);
-          setProgress(0);
-        }, 200);
-      }
-    }
-  }, [navigation.state, isVisible]);
+    const timer = window.setInterval(() => {
+      setProgress((prev) => (prev >= 90 ? prev : prev + Math.random() * 10));
+    }, 100);
+
+    const completeTimeout = window.setTimeout(() => {
+      setProgress(100);
+      window.setTimeout(() => {
+        setIsVisible(false);
+        setProgress(0);
+      }, 200);
+    }, 800);
+
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(completeTimeout);
+    };
+  }, [location.pathname]);
 
   if (!isVisible) return null;
 
