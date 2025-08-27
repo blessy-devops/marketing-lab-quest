@@ -33,6 +33,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import { NewExperimentShellSkeleton } from '@/components/ui/page-shell-skeleton';
 import { UnitSelector } from "@/components/forms/UnitSelector";
 import { Stepper, type Step } from "@/components/ui/stepper";
 import { useFormAutoSave } from "@/hooks/useFormAutoSave";
@@ -94,13 +95,7 @@ export default function NewExperiment() {
 
   // Aguardar o carregamento antes de verificar permissões
   if (loading) {
-    return (
-      <div className="container mx-auto py-6">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Carregando...</h1>
-        </div>
-      </div>
-    );
+    return <NewExperimentShellSkeleton />;
   }
 
   // Verificar permissão de acesso

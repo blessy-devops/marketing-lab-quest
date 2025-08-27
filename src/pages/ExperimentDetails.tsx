@@ -24,6 +24,7 @@ import { TipoExperimentoDisplay } from "@/components/forms/TipoExperimentoDispla
 import { FileUpload } from "@/components/anexos/FileUpload";
 import { useAnexos } from "@/hooks/useAnexos";
 import { ShareExperimentDialog } from "@/components/share/ShareExperimentDialog";
+import { ExperimentDetailsShellSkeleton } from '@/components/ui/page-shell-skeleton';
 
 type Metrica = Tables<"metricas">;
 
@@ -75,15 +76,7 @@ const ExperimentDetails = () => {
   }, [experimento?.id]);
 
   if (loading) {
-    return (
-      <div className="container mx-auto py-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-10" />
-          <Skeleton className="h-8 w-64" />
-        </div>
-        <Skeleton className="h-[600px] w-full" />
-      </div>
-    );
+    return <ExperimentDetailsShellSkeleton />;
   }
 
   if (!experimento) {

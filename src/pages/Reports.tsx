@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReportsShellSkeleton } from '@/components/ui/page-shell-skeleton';
 import { 
   BarChart, 
   LineChart, 
@@ -174,17 +175,7 @@ export default function Reports() {
   };
 
   if (loading || !processedData) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-20 w-full" />
-        <div className="grid gap-4 md:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
+    return <ReportsShellSkeleton />;
   }
 
   return (

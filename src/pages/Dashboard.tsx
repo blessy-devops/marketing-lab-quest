@@ -10,6 +10,7 @@ import { useDashboardMetrics, useExperimentosComResultados } from "@/hooks/useSu
 import { Link } from "react-router-dom";
 import { format, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DashboardShellSkeleton } from "@/components/ui/page-shell-skeleton";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -133,6 +134,9 @@ export default function Dashboard() {
       }));
   }, [experimentosData]);
 
+  if (metricsLoading || dataLoading) {
+    return <DashboardShellSkeleton />;
+  }
   if (metricsError || dataError) {
     return (
       <div className="space-y-6">

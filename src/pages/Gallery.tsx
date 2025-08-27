@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getChannelsByCategory, getChannelIcon } from "@/constants/canais";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GalleryShellSkeleton } from '@/components/ui/page-shell-skeleton';
 import { 
   ArrowUpRight, 
   Calendar, 
@@ -143,21 +144,7 @@ export default function Gallery() {
   const totalExperiments = filteredData.length;
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-20 w-full" />
-        <div className="grid gap-4 md:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-80" />
-          ))}
-        </div>
-      </div>
-    );
+    return <GalleryShellSkeleton />;
   }
 
   return (

@@ -23,6 +23,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { useDuplicateExperiment } from '@/hooks/useDuplicateExperiment';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ExperimentsListShellSkeleton } from '@/components/ui/page-shell-skeleton';
 
 interface ExperimentoExtended {
   id: string;
@@ -346,12 +347,7 @@ export default function ExperimentsList() {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 bg-muted animate-pulse rounded" />
-        <div className="h-64 bg-muted animate-pulse rounded" />
-      </div>
-    );
+    return <ExperimentsListShellSkeleton />;
   }
 
   return (
