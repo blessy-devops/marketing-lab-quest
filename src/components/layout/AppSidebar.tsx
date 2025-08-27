@@ -56,19 +56,21 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible={isNewExperimentPage ? "offcanvas" : "icon"}>
-      <SidebarContent className="p-3">
+      <SidebarContent className="p-3 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-2">
         {/* Logo Section */}
         <div className="mb-6 flex items-center justify-center group-data-[collapsible=icon]:justify-center">
-          <div className="flex items-center gap-2 w-full justify-start group-data-[collapsible=icon]:gap-0">
+          <div className="flex items-center gap-2 w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
             <img 
               src="/src/assets/blessy-logo.png" 
               alt="Blessy" 
-              className="w-8 h-8 rounded-lg flex-shrink-0"
+              className="w-8 h-8 rounded-lg flex-shrink-0 group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6"
             />
-            <div className="group-data-[collapsible=icon]:hidden">
-              <h1 className="font-bold text-sm text-sidebar-foreground">Blessy</h1>
-              <p className="text-xs text-sidebar-foreground/70">Growth Lab</p>
-            </div>
+            {!isCollapsed && (
+              <div>
+                <h1 className="font-bold text-sm text-sidebar-foreground">Blessy</h1>
+                <p className="text-xs text-sidebar-foreground/70">Growth Lab</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -88,7 +90,7 @@ export function AppSidebar() {
                       className={getNavCls}
                     >
                       <item.icon className="w-4 h-4" />
-                      <span className="group-data-[collapsible=icon]:sr-only">{item.title}</span>
+                      {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -112,7 +114,7 @@ export function AppSidebar() {
                       className={getNavCls}
                     >
                       <item.icon className="w-4 h-4" />
-                      <span className="group-data-[collapsible=icon]:sr-only">{item.title}</span>
+                      {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -132,7 +134,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild>
                   <NavLink to="/admin/tipos-experimento" className={getNavCls}>
                     <Settings className="w-4 h-4" />
-                    <span className="group-data-[collapsible=icon]:sr-only">Tipos de Experimento</span>
+                    {!isCollapsed && <span>Tipos de Experimento</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -140,7 +142,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild>
                   <NavLink to="/admin/canais" className={getNavCls}>
                     <Settings className="w-4 h-4" />
-                    <span className="group-data-[collapsible=icon]:sr-only">Canais & Subcanais</span>
+                    {!isCollapsed && <span>Canais & Subcanais</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
