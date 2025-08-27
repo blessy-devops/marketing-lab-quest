@@ -42,6 +42,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   
   const isCollapsed = state === "collapsed";
+  const isNewExperimentPage = currentPath === "/experimentos/novo";
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -54,7 +55,7 @@ export function AppSidebar() {
       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible={isNewExperimentPage ? "offcanvas" : "icon"}>
       <SidebarContent className="p-3">
         {/* Logo Section */}
         <div className="mb-6 flex items-center justify-center group-data-[collapsible=icon]:justify-center">
