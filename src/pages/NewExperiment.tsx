@@ -1,5 +1,6 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { ArrowLeft, Save, Plus, X, CalendarIcon, Star, Brain, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,10 +79,19 @@ interface FormData {
 export default function NewExperiment() {
   const navigate = useNavigate();
   const { hasRole, loading } = useAuth();
+  const { setOpen: setSidebarOpen } = useSidebar();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAdvancedConfigOpen, setIsAdvancedConfigOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Collapse sidebar when entering the page and restore when leaving
+  useEffect(() => {
+    setSidebarOpen(false);
+    return () => {
+      setSidebarOpen(true);
+    };
+  }, [setSidebarOpen]);
 
   const steps: Step[] = [
     { id: "type", title: "Tipo", description: "Tipo de cadastro e experimento" },
@@ -384,6 +394,10 @@ export default function NewExperiment() {
     }
   };
 
+  const goToStep = (stepIndex: number) => {
+    setCurrentStep(stepIndex);
+  };
+
   const canProceedToNextStep = () => {
     const values = form.getValues();
     switch (currentStep) {
@@ -402,6 +416,20 @@ export default function NewExperiment() {
       default:
         return true;
     }
+  };
+
+  const canNavigateToStep = (stepIndex: number) => {
+    if (stepIndex <= currentStep) return true; // Can always go back
+    
+    // Can only proceed if all previous steps are valid
+    for (let i = 0; i < stepIndex; i++) {
+      const prevCurrentStep = currentStep;
+      setCurrentStep(i);
+      const canProceed = canProceedToNextStep();
+      setCurrentStep(prevCurrentStep);
+      if (!canProceed) return false;
+    }
+    return true;
   };
 
   const addTag = (tag: string) => {
@@ -423,44 +451,84 @@ export default function NewExperiment() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link to="/experimentos">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">Novo Experimento</h1>
-          <p className="text-muted-foreground">
-            Configure um novo experimento de marketing
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {currentStep === steps.length - 1 ? (
-            <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
-              <Save className="w-4 h-4 mr-2" />
-              {tipoCadastro === 'realizado' ? 'Salvar Experimento' : 'Criar Experimento'}
-            </Button>
-          ) : (
-            <Button 
-              type="button" 
-              onClick={nextStep} 
-              disabled={!canProceedToNextStep()}
-            >
-              Próximo
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          )}
+    <div className="grid grid-cols-12 gap-6 min-h-[calc(100vh-8rem)]">
+      {/* Vertical Stepper - Left Sidebar */}
+      <div className="col-span-12 lg:col-span-3">
+        <div className="sticky top-6">
+          <div className="mb-6">
+            <Link to="/experimentos">
+              <Button variant="ghost" size="sm" className="mb-4">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold tracking-tight">Novo Experimento</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Configure um novo experimento de marketing
+            </p>
+          </div>
+          
+          <Stepper 
+            steps={steps} 
+            currentStep={currentStep}
+            orientation="vertical"
+            onStepClick={goToStep}
+            canNavigateToStep={canNavigateToStep}
+            className="lg:block hidden"
+          />
+          
+          {/* Mobile horizontal stepper */}
+          <Stepper 
+            steps={steps} 
+            currentStep={currentStep}
+            orientation="horizontal"
+            className="lg:hidden block mb-6"
+          />
         </div>
       </div>
 
-      {/* Stepper */}
-      <Stepper steps={steps} currentStep={currentStep} />
+      {/* Main Content */}
+      <div className="col-span-12 lg:col-span-9">
+        <div className="space-y-6">
+          {/* Action buttons */}
+          <div className="flex justify-between items-center lg:justify-end">
+            <div className="flex gap-2 lg:hidden">
+              {currentStep > 0 && (
+                <Button variant="outline" size="sm" onClick={prevStep}>
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Anterior
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              {currentStep > 0 && (
+                <Button variant="outline" className="hidden lg:flex" onClick={prevStep}>
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Anterior
+                </Button>
+              )}
+              
+              {currentStep === steps.length - 1 ? (
+                <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {tipoCadastro === 'realizado' ? 'Salvar Experimento' : 'Criar Experimento'}
+                </Button>
+              ) : (
+                <Button 
+                  type="button" 
+                  onClick={nextStep} 
+                  disabled={!canProceedToNextStep()}
+                >
+                  Próximo
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+            </div>
+          </div>
 
-      <Form {...form}>
-        <form onSubmit={handleSubmit} className="space-y-6">
+          <Form {...form}>
+            <form onSubmit={handleSubmit} className="space-y-6">
           {/* Step 0: Tipo de Cadastro */}
           {currentStep === 0 && (
             <Card>
@@ -1282,8 +1350,10 @@ export default function NewExperiment() {
               )}
             </div>
           </div>
-        </form>
-      </Form>
+            </form>
+          </Form>
+        </div>
+      </div>
     </div>
   );
 }
