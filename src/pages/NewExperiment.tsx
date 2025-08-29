@@ -162,6 +162,26 @@ export default function NewExperiment() {
     loadFromStorage();
   }, [loadFromStorage]);
 
+  // Normalize dates after loading from localStorage (convert strings back to Date objects)
+  useEffect(() => {
+    const currentValues = form.getValues();
+    
+    // Convert date strings to Date objects for proper calendar display
+    if (currentValues.data_inicio && typeof currentValues.data_inicio === 'string') {
+      const startDate = new Date(currentValues.data_inicio);
+      if (!isNaN(startDate.getTime())) {
+        form.setValue('data_inicio', startDate);
+      }
+    }
+    
+    if (currentValues.data_fim && typeof currentValues.data_fim === 'string') {
+      const endDate = new Date(currentValues.data_fim);
+      if (!isNaN(endDate.getTime())) {
+        form.setValue('data_fim', endDate);
+      }
+    }
+  }, []); // Run only on mount
+
   const { fields: metricasFields, append: appendMetrica, remove: removeMetrica } = useFieldArray({
     control: form.control,
     name: "metricas"
@@ -198,6 +218,26 @@ export default function NewExperiment() {
     if (v === '' || v === null || v === undefined) return null;
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
+  };
+
+  // Helper function to format date for database (handles Date objects and strings)
+  const formatDateForDB = (dateValue: any) => {
+    if (!dateValue) return null;
+    
+    // If it's already a Date object, use toISOString
+    if (dateValue instanceof Date) {
+      return dateValue.toISOString().split('T')[0];
+    }
+    
+    // If it's a string (from localStorage), try to parse it
+    if (typeof dateValue === 'string') {
+      const parsedDate = new Date(dateValue);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate.toISOString().split('T')[0];
+      }
+    }
+    
+    return null;
   };
 
   const onSubmit = async (data: FormData) => {
@@ -243,8 +283,8 @@ export default function NewExperiment() {
         status: data.status,
         canais: data.canais,
         hipotese: data.hipotese,
-        data_inicio: data.data_inicio?.toISOString().split('T')[0],
-        data_fim: data.data_fim?.toISOString().split('T')[0],
+        data_inicio: formatDateForDB(data.data_inicio),
+        data_fim: formatDateForDB(data.data_fim),
         // Store tipo_experimento_id in tipo field for now
         tipo_experimento_id: data.tipo_experimento_id,
         subtipo_experimento_id: data.subtipo_experimento_id,
