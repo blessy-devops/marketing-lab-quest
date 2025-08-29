@@ -327,8 +327,9 @@ export default function EditExperiment() {
         <h1 className="text-2xl font-bold">Editar Experimento</h1>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Informações Básicas */}
           <Card className="lg:col-span-2">
             <CardHeader>
@@ -782,6 +783,7 @@ export default function EditExperiment() {
           </Button>
         </div>
       </form>
+      </Form>
     </div>
   );
 }
