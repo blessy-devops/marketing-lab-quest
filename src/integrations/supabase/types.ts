@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -306,6 +306,42 @@ export type Database = {
           id?: string
           role?: string | null
           token?: string | null
+        }
+        Relationships: []
+      }
+      experiment_shares: {
+        Row: {
+          access_type: string
+          active: boolean
+          created_at: string
+          created_by: string | null
+          experimento_id: string
+          expires_at: string | null
+          id: string
+          link_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_type?: string
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          experimento_id: string
+          expires_at?: string | null
+          id?: string
+          link_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_type?: string
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          experimento_id?: string
+          expires_at?: string | null
+          id?: string
+          link_token?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -737,6 +773,7 @@ export type Database = {
           fatos: string | null
           id: string
           matriz_ice: Json | null
+          rating: number | null
           roi: number | null
           sucesso: boolean | null
           tags: string[] | null
@@ -752,6 +789,7 @@ export type Database = {
           fatos?: string | null
           id?: string
           matriz_ice?: Json | null
+          rating?: number | null
           roi?: number | null
           sucesso?: boolean | null
           tags?: string[] | null
@@ -767,6 +805,7 @@ export type Database = {
           fatos?: string | null
           id?: string
           matriz_ice?: Json | null
+          rating?: number | null
           roi?: number | null
           sucesso?: boolean | null
           tags?: string[] | null
@@ -960,21 +999,25 @@ export type Database = {
       get_oraculo_metrics: {
         Args: { days_back?: number }
         Returns: {
-          total_consultas: number
           consultas_com_experimento: number
-          taxa_conversao_experimento: number
-          experimentos_com_sucesso: number
-          taxa_sucesso_experimentos: number
-          roi_medio: number
-          tempo_medio_ciclo: number
           consultas_por_tipo: Json
+          experimentos_com_sucesso: number
+          roi_medio: number
+          taxa_conversao_experimento: number
+          taxa_sucesso_experimentos: number
+          tempo_medio_ciclo: number
           tendencia_uso: Json
+          total_consultas: number
         }[]
+      }
+      get_shared_experiment: {
+        Args: { token: string }
+        Returns: Json
       }
       has_role: {
         Args: {
-          user_uuid: string
           check_role: Database["public"]["Enums"]["user_role"]
+          user_uuid: string
         }
         Returns: boolean
       }
