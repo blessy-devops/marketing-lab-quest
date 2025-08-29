@@ -193,6 +193,13 @@ export default function NewExperiment() {
     }
   }, [tipoCadastro, form]);
 
+  // Helper function to convert values to number or null
+  const toNumberOrNull = (v: any) => {
+    if (v === '' || v === null || v === undefined) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
   const onSubmit = async (data: FormData) => {
     // Validar tipo de experimento
     if (!data.tipo_experimento_id) {
@@ -254,24 +261,32 @@ export default function NewExperiment() {
 
       if (experimentoError) throw experimentoError;
 
-      // Inserir métricas
+      // Inserir métricas com conversão e filtragem adequada
       if (data.metricas.length > 0) {
-        const metricasPrincipais = data.metricas
+        // Primeiro, processar e filtrar métricas válidas
+        const metricasProcessed = data.metricas
           .filter((metrica) => metrica.nome.trim())
           .map((metrica) => ({
-            experimento_id: novoExperimento.id,
-            nome: metrica.nome,
-            valor: metrica.valor,
-            unidade: metrica.unidade,
-            tipo: tipoCadastro === 'realizado' ? 'realizada' : 'esperada',
-          }));
+            ...metrica,
+            valorProcessado: toNumberOrNull(metrica.valor),
+            baselineProcessado: toNumberOrNull(metrica.baseline)
+          }))
+          .filter((metrica) => metrica.valorProcessado !== null);
 
-        const metricasBaseline = data.metricas
-          .filter((metrica) => metrica.nome.trim() && metrica.baseline !== undefined && metrica.baseline !== null && !Number.isNaN(metrica.baseline))
+        const metricasPrincipais = metricasProcessed.map((metrica) => ({
+          experimento_id: novoExperimento.id,
+          nome: metrica.nome,
+          valor: metrica.valorProcessado,
+          unidade: metrica.unidade,
+          tipo: tipoCadastro === 'realizado' ? 'realizada' : 'esperada',
+        }));
+
+        const metricasBaseline = metricasProcessed
+          .filter((metrica) => metrica.baselineProcessado !== null)
           .map((metrica) => ({
             experimento_id: novoExperimento.id,
             nome: metrica.nome,
-            valor: metrica.baseline as number,
+            valor: metrica.baselineProcessado,
             unidade: metrica.unidade,
             tipo: 'baseline',
           }));
@@ -967,7 +982,10 @@ export default function NewExperiment() {
                                 step="0.01"
                                 placeholder="0.00"
                                 {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  field.onChange(value === '' ? '' : parseFloat(value));
+                                }}
                               />
                             </FormControl>
                             <FormMessage />
