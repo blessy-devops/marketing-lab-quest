@@ -321,17 +321,8 @@ export default function NewExperiment() {
           tipo: tipoCadastro === 'realizado' ? 'realizada' : 'esperada',
         }));
 
-        const metricasBaseline = metricasProcessed
-          .filter((metrica) => metrica.baselineProcessado !== null)
-          .map((metrica) => ({
-            experimento_id: novoExperimento.id,
-            nome: metrica.nome,
-            valor: metrica.baselineProcessado,
-            unidade: metrica.unidade,
-            tipo: 'baseline',
-          }));
-
-        const metricasData = [...metricasPrincipais, ...metricasBaseline];
+        // Only use main metrics - baseline values are not persisted to avoid DB constraint error
+        const metricasData = metricasPrincipais;
 
         if (metricasData.length > 0) {
           const { error: metricasError } = await supabase
