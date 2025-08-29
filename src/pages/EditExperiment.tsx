@@ -40,7 +40,9 @@ interface FormData {
   hipotese: string;
   metricas: Array<{
     nome: string;
-    valor: number;
+    valorEsperado?: string;
+    valorRealizado?: string;
+    baseline?: string;
     unidade?: string;
   }>;
   // Configurações de IA
@@ -48,6 +50,13 @@ interface FormData {
   gerar_playbook?: boolean;
   tags?: string[];
 }
+
+// Helper function to convert string to number or null
+const toNumberOrNull = (value: string | undefined): number | null => {
+  if (!value || value.trim() === "") return null;
+  const num = parseFloat(value);
+  return isNaN(num) ? null : num;
+};
 
 const statusOptions = [
   { value: "planejado", label: "Planejado" },
@@ -80,7 +89,7 @@ export default function EditExperiment() {
       status: "planejado",
       canais: [],
       hipotese: "",
-      metricas: [{ nome: "", valor: 0, unidade: "" }],
+      metricas: [{ nome: "", valorEsperado: "", valorRealizado: "", baseline: "", unidade: "" }],
       base_conhecimento: true,
       gerar_playbook: false,
       tags: []
@@ -140,11 +149,35 @@ export default function EditExperiment() {
           return;
         }
 
-        // Buscar métricas do experimento
+        // Buscar métricas do experimento (todos os tipos)
         const { data: metricasData } = await supabase
           .from('metricas')
           .select('*')
           .eq('experimento_id', id);
+
+        // Agrupar métricas por nome
+        const metricasGrouped: Record<string, any> = {};
+        metricasData?.forEach(metrica => {
+          if (!metricasGrouped[metrica.nome]) {
+            metricasGrouped[metrica.nome] = {
+              nome: metrica.nome,
+              unidade: metrica.unidade,
+              valorEsperado: "",
+              valorRealizado: "",
+              baseline: ""
+            };
+          }
+          
+          if (metrica.tipo === 'esperada') {
+            metricasGrouped[metrica.nome].valorEsperado = metrica.valor?.toString() || "";
+          } else if (metrica.tipo === 'realizada') {
+            metricasGrouped[metrica.nome].valorRealizado = metrica.valor?.toString() || "";
+          } else if (metrica.tipo === 'baseline') {
+            metricasGrouped[metrica.nome].baseline = metrica.valor?.toString() || "";
+          }
+        });
+
+        const metricasArray = Object.values(metricasGrouped);
 
         if (!cancelled) {
           setMetricas(metricasData || []);
@@ -161,11 +194,7 @@ export default function EditExperiment() {
             hipotese: exp.hipotese ?? "",
             data_inicio: exp.data_inicio ? new Date(exp.data_inicio) : undefined,
             data_fim: exp.data_fim ? new Date(exp.data_fim) : undefined,
-            metricas: metricasData?.length ? metricasData.map(m => ({
-              nome: m.nome ?? "",
-              valor: Number(m.valor) || 0,
-              unidade: m.unidade ?? ""
-            })) : [{ nome: "", valor: 0, unidade: "" }],
+            metricas: metricasArray.length > 0 ? metricasArray : [{ nome: "", valorEsperado: "", valorRealizado: "", baseline: "", unidade: "" }],
             base_conhecimento: exp.base_conhecimento ?? true,
             gerar_playbook: false,
             tags: exp.tags ?? []
@@ -266,15 +295,53 @@ export default function EditExperiment() {
 
       // Inserir novas métricas
       if (data.metricas.length > 0) {
-        const metricasData = data.metricas
+        const metricasData: Array<{
+          experimento_id: string | undefined;
+          nome: string;
+          valor: number;
+          unidade?: string;
+          tipo: string;
+        }> = [];
+
+        data.metricas
           .filter(m => m.nome.trim())
-          .map(metrica => ({
-            experimento_id: id,
-            nome: metrica.nome,
-            valor: metrica.valor,
-            unidade: metrica.unidade,
-            tipo: 'esperada'
-          }));
+          .forEach(metrica => {
+            // Adicionar métrica esperada
+            const valorEsperado = toNumberOrNull(metrica.valorEsperado);
+            if (valorEsperado !== null) {
+              metricasData.push({
+                experimento_id: id,
+                nome: metrica.nome,
+                valor: valorEsperado,
+                unidade: metrica.unidade,
+                tipo: 'esperada'
+              });
+            }
+
+            // Adicionar métrica realizada
+            const valorRealizado = toNumberOrNull(metrica.valorRealizado);
+            if (valorRealizado !== null) {
+              metricasData.push({
+                experimento_id: id,
+                nome: metrica.nome,
+                valor: valorRealizado,
+                unidade: metrica.unidade,
+                tipo: 'realizada'
+              });
+            }
+
+            // Adicionar baseline
+            const baseline = toNumberOrNull(metrica.baseline);
+            if (baseline !== null) {
+              metricasData.push({
+                experimento_id: id,
+                nome: metrica.nome,
+                valor: baseline,
+                unidade: metrica.unidade,
+                tipo: 'baseline'
+              });
+            }
+          });
 
         if (metricasData.length > 0) {
           const { error: metricasError } = await supabase
@@ -717,7 +784,7 @@ export default function EditExperiment() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => append({ nome: "", valor: 0, unidade: "" })}
+                onClick={() => append({ nome: "", valorEsperado: "", valorRealizado: "", baseline: "", unidade: "" })}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Métrica
@@ -725,46 +792,80 @@ export default function EditExperiment() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex items-end gap-4 p-4 border rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-                  <div className="space-y-2">
-                    <Label>Nome da Métrica</Label>
-                    <Input
-                      placeholder="Ex: Taxa de conversão"
-                      {...form.register(`metricas.${index}.nome`)}
-                    />
+            {fields.map((field, index) => {
+              const isRealized = status === 'concluido' || status === 'em_andamento';
+              
+              return (
+                <div key={field.id} className="flex items-end gap-4 p-4 border rounded-lg">
+                  <div className="grid grid-cols-1 gap-4 flex-1">
+                    <div className="space-y-2">
+                      <Label>Nome da Métrica</Label>
+                      <Input
+                        placeholder="Ex: Taxa de conversão"
+                        {...form.register(`metricas.${index}.nome`)}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Campos condicionais baseados no status */}
+                      {!isRealized ? (
+                        // Para experimentos futuros - apenas valor esperado
+                        <div className="space-y-2">
+                          <Label>Valor Esperado</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0"
+                            {...form.register(`metricas.${index}.valorEsperado`)}
+                          />
+                        </div>
+                      ) : (
+                        // Para experimentos realizados - valor realizado e baseline
+                        <>
+                          <div className="space-y-2">
+                            <Label>Valor Realizado</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0"
+                              {...form.register(`metricas.${index}.valorRealizado`)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Valor Anterior</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0"
+                              {...form.register(`metricas.${index}.baseline`)}
+                            />
+                          </div>
+                        </>
+                      )}
+                      
+                      <div className="space-y-2">
+                        <Label>Unidade</Label>
+                        <UnitSelector
+                          value={form.watch(`metricas.${index}.unidade`)}
+                          onChange={(v) => form.setValue(`metricas.${index}.unidade`, v)}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Valor Esperado</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      {...form.register(`metricas.${index}.valor`, { valueAsNumber: true })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Unidade</Label>
-                    <UnitSelector
-                      value={form.watch(`metricas.${index}.unidade`)}
-                      onChange={(v) => form.setValue(`metricas.${index}.unidade`, v)}
-                    />
-                  </div>
+                  {fields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => remove(index)}
+                      className="text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-                {fields.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => remove(index)}
-                    className="text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
 
