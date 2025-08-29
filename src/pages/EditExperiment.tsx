@@ -188,7 +188,7 @@ export default function EditExperiment() {
     return () => {
       cancelled = true;
     };
-  }, [id, form]);
+  }, [id]);
 
   if (!hasRole('editor')) {
     return (
