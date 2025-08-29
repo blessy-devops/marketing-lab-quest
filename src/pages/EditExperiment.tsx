@@ -481,7 +481,6 @@ export default function EditExperiment() {
                 </CardDescription>
               </CardHeader>
                <CardContent>
-                <Form {...form}>
                   <FormField
                     control={form.control}
                     name="canais"
@@ -491,7 +490,6 @@ export default function EditExperiment() {
                       </FormItem>
                     )}
                   />
-                </Form>
               </CardContent>
             </Card>
           </div>
