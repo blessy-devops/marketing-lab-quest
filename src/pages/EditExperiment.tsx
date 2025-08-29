@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { CANAIS_OPTIONS, getChannelsByCategory } from "@/constants/canais";
-import { useExperimentosComResultados } from "@/hooks/useSupabaseData";
+
 import { CanaisSelector } from "@/components/forms/CanaisSelector";
 import { Form, FormField, FormItem, FormControl, FormLabel, FormDescription, FormMessage } from "@/components/ui/form";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -64,12 +64,11 @@ export default function EditExperiment() {
   const { hasRole } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [experimento, setExperimento] = useState<any | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [metricas, setMetricas] = useState<any[]>([]);
   const [isAdvancedConfigOpen, setIsAdvancedConfigOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
-  const { data: experimentos } = useExperimentosComResultados();
-
-  const experimento = experimentos?.find(exp => exp.id === id);
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -103,45 +102,93 @@ export default function EditExperiment() {
     "checkout", "cta", "landing-page", "mobile", "desktop"
   ];
 
-  // Preencher formulário com dados do experimento
+  // Buscar experimento e preencher formulário
   useEffect(() => {
+    let cancelled = false;
+    
     const fetchExperimentoData = async () => {
-      if (!experimento) return;
+      if (!id) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
 
-      // Buscar métricas do experimento
-      const { data: metricasData } = await supabase
-        .from('metricas')
-        .select('*')
-        .eq('experimento_id', id);
-
-      setMetricas(metricasData || []);
-
-      form.reset({
-        nome: experimento.nome,
-        tipo_experimento_id: (experimento as any).tipo_experimento_id || undefined,
-        subtipo_experimento_id: (experimento as any).subtipo_experimento_id || undefined,
-        subtipo_customizado: (experimento as any).subtipo_customizado || "",
-        responsavel: experimento.responsavel || "",
-        status: experimento.status || "planejado",
-        canais: experimento.canais || [],
-        hipotese: experimento.hipotese || "",
-        data_inicio: experimento.data_inicio ? new Date(experimento.data_inicio) : undefined,
-        data_fim: experimento.data_fim ? new Date(experimento.data_fim) : undefined,
-        metricas: metricasData?.length ? metricasData.map(m => ({
-          nome: m.nome,
-          valor: Number(m.valor) || 0,
-          unidade: m.unidade || ""
-        })) : [{ nome: "", valor: 0, unidade: "" }],
-        base_conhecimento: (experimento as any).base_conhecimento ?? true,
-        gerar_playbook: false, // Always false by default for editing
-        tags: (experimento as any).tags || []
-      });
+      setLoading(true);
       
-      setLoading(false);
+      try {
+        // Buscar experimento
+        const { data: exp, error: expError } = await supabase
+          .from('experimentos')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (expError) {
+          toast.error(`Erro ao carregar experimento: ${expError.message}`);
+          if (!cancelled) {
+            setNotFound(true);
+            setLoading(false);
+          }
+          return;
+        }
+
+        if (!exp) {
+          if (!cancelled) {
+            setNotFound(true);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Buscar métricas do experimento
+        const { data: metricasData } = await supabase
+          .from('metricas')
+          .select('*')
+          .eq('experimento_id', id);
+
+        if (!cancelled) {
+          setMetricas(metricasData || []);
+          setExperimento(exp);
+
+          form.reset({
+            nome: exp.nome ?? "",
+            tipo_experimento_id: exp.tipo_experimento_id ?? undefined,
+            subtipo_experimento_id: exp.subtipo_experimento_id ?? undefined,
+            subtipo_customizado: exp.subtipo_customizado ?? "",
+            responsavel: exp.responsavel ?? "",
+            status: exp.status ?? "planejado",
+            canais: exp.canais ?? [],
+            hipotese: exp.hipotese ?? "",
+            data_inicio: exp.data_inicio ? new Date(exp.data_inicio) : undefined,
+            data_fim: exp.data_fim ? new Date(exp.data_fim) : undefined,
+            metricas: metricasData?.length ? metricasData.map(m => ({
+              nome: m.nome ?? "",
+              valor: Number(m.valor) || 0,
+              unidade: m.unidade ?? ""
+            })) : [{ nome: "", valor: 0, unidade: "" }],
+            base_conhecimento: exp.base_conhecimento ?? true,
+            gerar_playbook: false,
+            tags: exp.tags ?? []
+          });
+          
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar experimento:', error);
+        if (!cancelled) {
+          toast.error('Erro inesperado ao carregar experimento');
+          setNotFound(true);
+          setLoading(false);
+        }
+      }
     };
 
     fetchExperimentoData();
-  }, [experimento, form, id]);
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [id, form]);
 
   if (!hasRole('editor')) {
     return (
@@ -159,11 +206,27 @@ export default function EditExperiment() {
     );
   }
 
-  if (loading || !experimento) {
+  if (loading) {
     return (
       <div className="container mx-auto py-6">
         <div className="text-center">
           <p>Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold">Experimento não encontrado</h1>
+          <p className="text-muted-foreground">
+            O experimento que você está tentando editar não foi encontrado.
+          </p>
+          <Button onClick={() => navigate("/experimentos")}>
+            Voltar para lista
+          </Button>
         </div>
       </div>
     );

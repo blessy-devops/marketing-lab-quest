@@ -16,10 +16,15 @@ export function useDuplicateExperiment() {
         .from('experimentos')
         .select('*')
         .eq('id', experimentoId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) {
         toast.error(`Erro ao buscar experimento: ${fetchError.message}`);
+        return null;
+      }
+
+      if (!originalExperiment) {
+        toast.error('Experimento não encontrado');
         return null;
       }
 
