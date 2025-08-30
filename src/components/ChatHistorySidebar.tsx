@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Brain, MessageCircle, Plus, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,7 +40,14 @@ export function ChatHistorySidebar({
         return;
       }
 
-      setConversations(data || []);
+      // Transform the data to ensure it matches our Conversation interface
+      const transformedData = (data || []).map((item: any) => ({
+        conversation_id: item.conversation_id,
+        title: item.title || item.first_message || 'Conversa sem título',
+        last_updated: item.last_updated
+      }));
+
+      setConversations(transformedData);
     } catch (error) {
       console.error('Erro ao carregar conversas:', error);
     } finally {
