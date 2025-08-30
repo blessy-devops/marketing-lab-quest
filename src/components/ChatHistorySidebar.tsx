@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Brain, MessageCircle, Plus, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 interface Conversation {
   conversation_id: string;
-  first_message: string;
+  title: string;
   last_updated: string;
 }
 
@@ -142,7 +143,7 @@ export function ChatHistorySidebar({
               >
                 <div className="space-y-1">
                   <p className="text-sm font-medium line-clamp-2">
-                    {truncateMessage(conversation.first_message)}
+                    {truncateMessage(conversation.title)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(conversation.last_updated)}

@@ -1,4 +1,5 @@
 
+
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -148,6 +149,7 @@ export function useOraculoAsync() {
         .from('oraculo_historico')
         .select('*')
         .eq('conversation_id', conversationId)
+        .neq('role', 'system') // Excluir mensagens de título
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -189,3 +191,4 @@ export function useOraculoAsync() {
     erro,
   };
 }
+
