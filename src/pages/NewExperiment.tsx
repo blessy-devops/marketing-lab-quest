@@ -71,7 +71,6 @@ interface FormData {
   acoes?: string;
   aprendizados?: string;
   sucesso?: boolean;
-  experimento_sucesso?: boolean;
   // Configurações de IA
   base_conhecimento?: boolean;
   gerar_playbook?: boolean;
@@ -147,7 +146,6 @@ export default function NewExperiment() {
       acoes: "",
       aprendizados: "",
       sucesso: false,
-      experimento_sucesso: false,
       base_conhecimento: true,
       gerar_playbook: false,
       tags: []
@@ -294,7 +292,7 @@ export default function NewExperiment() {
         subtipo_experimento_id: data.subtipo_experimento_id,
         subtipo_customizado: data.subtipo_customizado,
         base_conhecimento: data.base_conhecimento,
-        experimento_sucesso: data.experimento_sucesso || false,
+        experimento_sucesso: data.sucesso || false,
         tags: data.tags
       };
 
@@ -1229,53 +1227,28 @@ export default function NewExperiment() {
                      Status do Experimento
                    </h4>
                    
-                   <div className="grid gap-4 md:grid-cols-2">
-                     <FormField
-                       control={form.control}
-                       name="sucesso"
-                       render={({ field }) => (
-                         <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                           <FormControl>
-                             <Checkbox
-                               checked={field.value}
-                               onCheckedChange={field.onChange}
-                             />
-                           </FormControl>
-                           <div className="space-y-1 leading-none">
-                             <FormLabel>
-                               Experimento bem-sucedido
-                             </FormLabel>
-                             <FormDescription className="text-xs">
-                               Marque se o experimento atingiu os objetivos esperados
-                             </FormDescription>
-                           </div>
-                         </FormItem>
-                       )}
-                     />
-
-                     <FormField
-                       control={form.control}
-                       name="experimento_sucesso"
-                       render={({ field }) => (
-                         <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                           <FormControl>
-                             <Checkbox
-                               checked={field.value}
-                               onCheckedChange={field.onChange}
-                             />
-                           </FormControl>
-                           <div className="space-y-1 leading-none">
-                             <FormLabel className="flex items-center gap-2">
-                               🏆 Destacar como sucesso
-                             </FormLabel>
-                             <FormDescription className="text-xs">
-                               Exibir ícone de troféu na galeria de experimentos
-                             </FormDescription>
-                           </div>
-                         </FormItem>
-                       )}
-                     />
-                   </div>
+                   <FormField
+                     control={form.control}
+                     name="sucesso"
+                     render={({ field }) => (
+                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-lg">
+                         <FormControl>
+                           <Checkbox
+                             checked={field.value}
+                             onCheckedChange={field.onChange}
+                           />
+                         </FormControl>
+                         <div className="space-y-1 leading-none">
+                           <FormLabel className="flex items-center gap-2">
+                             🏆 Experimento bem-sucedido
+                           </FormLabel>
+                           <FormDescription className="text-xs">
+                             Marque se o experimento atingiu os objetivos esperados. Será destacado com troféu na galeria.
+                           </FormDescription>
+                         </div>
+                       </FormItem>
+                     )}
+                   />
                  </div>
                </CardContent>
              </Card>

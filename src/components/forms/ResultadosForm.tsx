@@ -44,7 +44,6 @@ export function ResultadosForm({ experimentoId, resultadoExistente, onSuccess, o
   const [impacto, setImpacto] = useState([resultadoExistente?.matriz_ice?.impacto || 3]);
   const [confianca, setConfianca] = useState([resultadoExistente?.matriz_ice?.confianca || 3]);
   const [facilidade, setFacilidade] = useState([resultadoExistente?.matriz_ice?.facilidade || 3]);
-  const [experimentoSucesso, setExperimentoSucesso] = useState<boolean>(resultadoExistente?.experimento_sucesso || false);
 
   // Buscar tags existentes para autocomplete
   useEffect(() => {
@@ -109,7 +108,7 @@ export function ResultadosForm({ experimentoId, resultadoExistente, onSuccess, o
         sucesso,
         tags: tags.length > 0 ? tags : null,
         matriz_ice: matrizIce,
-        experimento_sucesso: experimentoSucesso
+        experimento_sucesso: sucesso
       };
 
       let query;
@@ -130,13 +129,11 @@ export function ResultadosForm({ experimentoId, resultadoExistente, onSuccess, o
       
       if (error) throw error;
 
-      // Se marcado como experimento de sucesso, atualizar na tabela experimentos
-      if (experimentoSucesso) {
-        await supabase
-          .from('experimentos')
-          .update({ experimento_sucesso: true })
-          .eq('id', experimentoId);
-      }
+      // Atualizar status de sucesso na tabela experimentos
+      await supabase
+        .from('experimentos')
+        .update({ experimento_sucesso: sucesso })
+        .eq('id', experimentoId);
 
       toast.success(resultadoExistente ? 'Resultado atualizado com sucesso!' : 'Resultado documentado com sucesso!');
       onSuccess?.();
@@ -177,14 +174,24 @@ export function ResultadosForm({ experimentoId, resultadoExistente, onSuccess, o
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 p-4 border rounded-lg">
                 <Checkbox
                   id="sucesso"
                   checked={sucesso}
                   onCheckedChange={(checked) => setSucesso(checked as boolean)}
                 />
-                <Label htmlFor="sucesso">Experimento bem-sucedido</Label>
+                <Label htmlFor="sucesso" className="flex items-center gap-2">
+                  🏆 Experimento bem-sucedido
+                </Label>
+                {sucesso && (
+                  <Trophy className="w-5 h-5 text-yellow-500 ml-auto" />
+                )}
               </div>
+              {sucesso && (
+                <p className="text-sm text-muted-foreground">
+                  Este experimento será destacado na galeria de sucessos com um troféu 🏆
+                </p>
+              )}
             </div>
           </div>
 
@@ -364,30 +371,6 @@ export function ResultadosForm({ experimentoId, resultadoExistente, onSuccess, o
             </div>
           </div>
 
-          <Separator />
-
-          {/* Experimento de Sucesso */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 p-4 border rounded-lg">
-              <Checkbox
-                id="experimento-sucesso"
-                checked={experimentoSucesso}
-                onCheckedChange={(checked) => setExperimentoSucesso(checked as boolean)}
-              />
-              <Label htmlFor="experimento-sucesso" className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-yellow-500" />
-                Marcar como Experimento de Sucesso
-              </Label>
-              {experimentoSucesso && (
-                <Trophy className="w-5 h-5 text-yellow-500 ml-auto" />
-              )}
-            </div>
-            {experimentoSucesso && (
-              <p className="text-sm text-muted-foreground">
-                Este experimento será destacado na galeria de sucessos com um troféu 🏆
-              </p>
-            )}
-          </div>
         </CardContent>
       </Card>
 
