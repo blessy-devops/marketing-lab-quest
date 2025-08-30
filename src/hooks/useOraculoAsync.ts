@@ -100,6 +100,19 @@ export function useOraculoAsync() {
         description: 'O Oráculo está processando sua consulta'
       });
 
+      // Iniciar watchdog de 25s para fallback se Realtime falhar
+      setTimeout(() => {
+        setMessages(prev => {
+          const hasLoadingMessage = prev.some(msg => msg.role === 'assistant' && msg.status === 'loading');
+          if (hasLoadingMessage) {
+            console.log('🔄 Watchdog: Realtime demorou, tentando fallback...');
+            // Chamar fallback inline para evitar dependência circular
+            tentarFallback(conversationId);
+          }
+          return prev;
+        });
+      }, 25000);
+
       return true;
 
     } catch (error: any) {
@@ -118,6 +131,45 @@ export function useOraculoAsync() {
       setLoading(false);
     }
   }, [loading]);
+
+  // Função auxiliar para fallback (inline para evitar dependência circular)
+  const tentarFallback = async (conversationId: string) => {
+    try {
+      console.log('🆘 Fallback: Buscando última mensagem do assistente...');
+      
+      const { data, error } = await supabase
+        .from('oraculo_historico')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .eq('role', 'assistant')
+        .neq('role', 'system')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        const latestAssistant = data[0];
+        console.log('✅ Fallback: Encontrada resposta do assistente');
+        
+        // Garantir que sources é um array ou null
+        const sources = Array.isArray(latestAssistant.sources) ? latestAssistant.sources : null;
+        atualizarMensagemAssistente(latestAssistant.content, sources);
+      } else {
+        console.log('⚠️ Fallback: Nenhuma nova resposta encontrada');
+        toast.error('Resposta demorou para chegar', {
+          description: 'Tente recarregar a conversa ou enviar novamente',
+          action: {
+            label: 'Recarregar',
+            onClick: () => carregarHistorico(conversationId)
+          }
+        });
+      }
+    } catch (error) {
+      console.error('❌ Erro no fallback:', error);
+      toast.error('Erro ao tentar recuperar resposta', {
+        description: 'Tente recarregar a página'
+      });
+    }
+  };
 
   const atualizarMensagemAssistente = useCallback((novoContent: string, sources?: any[]) => {
     console.log('🔄 Atualizando mensagem do assistente:', { 
@@ -145,12 +197,22 @@ export function useOraculoAsync() {
       
       console.log('📚 Carregando histórico para conversa:', conversationId);
       
-      const { data, error } = await supabase
+      // Usar Promise.race para timeout de 15s
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          console.log('⏰ Timeout ao carregar histórico após 15s');
+          reject(new Error('Timeout'));
+        }, 15000);
+      });
+
+      const dataPromise = supabase
         .from('oraculo_historico')
         .select('*')
         .eq('conversation_id', conversationId)
         .neq('role', 'system') // Excluir mensagens de título
         .order('created_at', { ascending: true });
+
+      const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any;
 
       if (error) {
         console.error('Erro ao carregar histórico:', error);
@@ -161,7 +223,7 @@ export function useOraculoAsync() {
         id: record.id,
         role: record.role,
         content: record.content || '',
-        sources: record.sources,
+        sources: Array.isArray(record.sources) ? record.sources : null,
         status: 'complete',
         timestamp: record.created_at,
       }));
@@ -170,11 +232,24 @@ export function useOraculoAsync() {
       setMessages(historicoMessages);
     } catch (error: any) {
       console.error('Erro ao carregar histórico:', error);
-      setErro('Erro ao carregar histórico da conversa');
+      
+      if (error.message === 'Timeout') {
+        setErro('Timeout ao carregar histórico - tente novamente');
+        toast.error('Timeout ao carregar histórico', {
+          description: 'A conexão está lenta, tente novamente'
+        });
+      } else {
+        setErro('Erro ao carregar histórico da conversa');
+        toast.error('Erro ao carregar histórico');
+      }
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const tentarFallbackHistorico = useCallback(async (conversationId: string) => {
+    return tentarFallback(conversationId);
+  }, [carregarHistorico]);
 
   const limparMensagens = useCallback(() => {
     setMessages([]);

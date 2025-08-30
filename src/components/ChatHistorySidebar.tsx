@@ -33,7 +33,18 @@ export function ChatHistorySidebar({
   const loadConversations = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_user_conversations');
+      
+      // Usar Promise.race para timeout de 15s
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          console.log('⏰ Timeout ao carregar conversas após 15s');
+          reject(new Error('Timeout'));
+        }, 15000);
+      });
+
+      const dataPromise = supabase.rpc('get_user_conversations');
+      
+      const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any;
       
       if (error) {
         console.error('Erro ao carregar conversas:', error);
@@ -48,8 +59,13 @@ export function ChatHistorySidebar({
       }));
 
       setConversations(transformedData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar conversas:', error);
+      
+      if (error.message === 'Timeout') {
+        console.log('⏰ Timeout ao carregar sidebar - conexão lenta');
+        // Não mostrar toast para não poluir a interface, apenas log
+      }
     } finally {
       setLoading(false);
     }

@@ -108,8 +108,8 @@ class OraculoService {
       }
     }
 
-    // Padrão: 120 segundos (2 minutos)
-    return 120000;
+    // Padrão: 60 segundos (reduzido para evitar CF timeouts)
+    return 60000;
   }
 
   async consultar(dados: OraculoRequest): Promise<OraculoResponse>;
@@ -246,10 +246,11 @@ class OraculoService {
       clearTimeout(timeoutId);
       
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Tempo esgotado');
+        console.error('⏰ Timeout do Oráculo após', timeoutMs/1000, 'segundos');
+        throw new Error('Tempo esgotado - tente novamente');
       }
       
-      console.error('Erro ao consultar Oráculo:', error);
+      console.error('❌ Erro ao consultar Oráculo:', error);
       throw error;
     }
   }
