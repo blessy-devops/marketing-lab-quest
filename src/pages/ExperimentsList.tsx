@@ -125,8 +125,8 @@ export default function ExperimentsList() {
   const [selectedDuration, setSelectedDuration] = useState<string>('');
   const [hasResults, setHasResults] = useState<string>('');
   const [onlySuccess, setOnlySuccess] = useState(false);
-  const [sortField, setSortField] = useState<string>('');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState<string>('data_inicio');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [openChannelCategories, setOpenChannelCategories] = useState<Record<string, boolean>>({});
