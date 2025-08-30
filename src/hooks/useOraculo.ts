@@ -30,10 +30,19 @@ export function useOraculo() {
     setErro(null);
 
     let loadingToastId: string | number | undefined;
+    let progressToastId: string | number | undefined;
 
     try {
-      // Mostrar toast de loading
+      // Mostrar toast de loading inicial
       loadingToastId = toast.loading('Consultando o Oráculo...');
+
+      // Atualizar toast após 30 segundos
+      const progressTimer = setTimeout(() => {
+        if (loadingToastId) {
+          toast.dismiss(loadingToastId);
+        }
+        progressToastId = toast.loading('Ainda processando... Isso pode levar até 2 minutos');
+      }, 30000);
 
       // Fazer a chamada
       console.log('🔍 Consultando Oráculo com:', { pergunta: pergunta.trim(), tipo, conversationId, userId });
@@ -43,6 +52,9 @@ export function useOraculo() {
         tipo,
         conversation_id: conversationId,
       }, userId);
+
+      // Limpar timer se a resposta chegou antes de 30s
+      clearTimeout(progressTimer);
       console.log('📥 Resposta recebida:', resultado);
 
       // Verificar resposta
@@ -88,6 +100,9 @@ export function useOraculo() {
     } finally {
       if (loadingToastId) {
         toast.dismiss(loadingToastId);
+      }
+      if (progressToastId) {
+        toast.dismiss(progressToastId);
       }
       setLoading(false);
     }

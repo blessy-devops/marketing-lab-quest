@@ -98,6 +98,20 @@ class OraculoService {
     throw new Error('URL do Oráculo não configurada');
   }
 
+  private getTimeoutMs(): number {
+    // Primeiro, tentar pegar da variável de ambiente
+    const envTimeout = import.meta.env.VITE_ORACULO_TIMEOUT_MS;
+    if (envTimeout) {
+      const timeout = parseInt(envTimeout, 10);
+      if (!isNaN(timeout) && timeout > 0) {
+        return timeout;
+      }
+    }
+
+    // Padrão: 120 segundos (2 minutos)
+    return 120000;
+  }
+
   async consultar(dados: OraculoRequest): Promise<OraculoResponse>;
   async consultar(dados: OraculoRequest, userId?: string): Promise<OraculoResponse>;
   async consultar(dados: OraculoRequest, userId?: string): Promise<OraculoResponse> {
@@ -106,9 +120,13 @@ class OraculoService {
     console.log('Chamando Oráculo em:', webhookUrl);
     const startTime = Date.now();
     
+    // Timeout configurável (padrão: 120 segundos)
+    const timeoutMs = this.getTimeoutMs();
+    console.log(`⏱️ Timeout configurado: ${timeoutMs}ms (${timeoutMs/1000}s)`);
+    
     // Criar AbortController para timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const headers: Record<string, string> = {
