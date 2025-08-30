@@ -415,13 +415,26 @@ export default function EditExperiment() {
           }
         });
 
-        // Perform upsert operation
-        if (metricasToUpsert.length > 0) {
-          const { error: upsertError } = await supabase
-            .from('metricas')
-            .upsert(metricasToUpsert, { onConflict: 'id' });
+        // Separate metrics into updates (with ID) and inserts (without ID)
+        const metricasToUpdate = metricasToUpsert.filter(m => m.id);
+        const metricasToInsert = metricasToUpsert.filter(m => !m.id);
 
-          if (upsertError) throw upsertError;
+        // Handle updates (existing metrics)
+        if (metricasToUpdate.length > 0) {
+          const { error: updateError } = await supabase
+            .from('metricas')
+            .upsert(metricasToUpdate, { onConflict: 'id' });
+
+          if (updateError) throw updateError;
+        }
+
+        // Handle inserts (new metrics)
+        if (metricasToInsert.length > 0) {
+          const { error: insertError } = await supabase
+            .from('metricas')
+            .insert(metricasToInsert);
+
+          if (insertError) throw insertError;
         }
 
         // Delete metrics that were cleared or removed
