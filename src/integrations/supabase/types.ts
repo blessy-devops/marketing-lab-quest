@@ -345,6 +345,44 @@ export type Database = {
         }
         Relationships: []
       }
+      experimento_embeddings: {
+        Row: {
+          chunk_texto: string | null
+          chunk_tipo: string | null
+          created_at: string | null
+          embedding: string | null
+          experimento_id: string | null
+          id: string
+          modelo: string
+        }
+        Insert: {
+          chunk_texto?: string | null
+          chunk_tipo?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          experimento_id?: string | null
+          id?: string
+          modelo: string
+        }
+        Update: {
+          chunk_texto?: string | null
+          chunk_tipo?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          experimento_id?: string | null
+          id?: string
+          modelo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experimento_embeddings_experimento_id_fkey"
+            columns: ["experimento_id"]
+            isOneToOne: false
+            referencedRelation: "experimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experimentos: {
         Row: {
           base_conhecimento: boolean | null
@@ -998,6 +1036,10 @@ export type Database = {
       }
     }
     Functions: {
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
@@ -1020,6 +1062,22 @@ export type Database = {
         Args: { token: string }
         Returns: Json
       }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
       has_role: {
         Args: {
           check_role: Database["public"]["Enums"]["user_role"]
@@ -1027,9 +1085,81 @@ export type Database = {
         }
         Returns: boolean
       }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
       user_can_access_experiment: {
         Args: { experiment_id: string }
         Returns: boolean
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
     }
     Enums: {

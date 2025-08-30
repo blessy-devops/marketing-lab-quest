@@ -37,6 +37,16 @@ export interface Resultado {
   acoes: string | null;
 }
 
+export interface ExperimentoEmbedding {
+  id: string;
+  experimento_id: string;
+  modelo: string;
+  embedding: number[];
+  chunk_texto: string | null;
+  chunk_tipo: string | null;
+  created_at: string;
+}
+
 export function useExperimentos() {
   const [experimentos, setExperimentos] = useState<Experimento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,4 +228,75 @@ export function useDashboardMetrics() {
   }, []);
 
   return { metrics, loading, error };
+}
+
+export function useEmbeddings(experimentoId?: string) {
+  const [embeddings, setEmbeddings] = useState<ExperimentoEmbedding[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchEmbeddings() {
+      try {
+        let query = supabase
+          .from('experimento_embeddings')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (experimentoId) {
+          query = query.eq('experimento_id', experimentoId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        setEmbeddings(data || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao carregar embeddings');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchEmbeddings();
+  }, [experimentoId]);
+
+  return { embeddings, loading, error };
+}
+
+export async function createEmbedding(embedding: Omit<ExperimentoEmbedding, 'id' | 'created_at'>) {
+  const { data, error } = await supabase
+    .from('experimento_embeddings')
+    .insert([embedding])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteEmbeddings(experimentoId: string) {
+  const { error } = await supabase
+    .from('experimento_embeddings')
+    .delete()
+    .eq('experimento_id', experimentoId);
+
+  if (error) throw error;
+}
+
+export async function searchSimilarExperiments(embedding: number[], limit: number = 10) {
+  // Esta função será implementada quando tivermos a extensão pgvector configurada
+  // Por enquanto, retornamos uma estrutura vazia
+  const { data, error } = await supabase.rpc('match_experiments', {
+    query_embedding: embedding,
+    match_threshold: 0.8,
+    match_count: limit
+  });
+
+  if (error) {
+    console.warn('Função de busca semântica ainda não implementada:', error.message);
+    return [];
+  }
+
+  return data || [];
 }
