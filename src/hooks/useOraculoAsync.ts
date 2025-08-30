@@ -137,6 +137,43 @@ export function useOraculoAsync() {
     }));
   }, []);
 
+  const carregarHistorico = useCallback(async (conversationId: string) => {
+    try {
+      setLoading(true);
+      setErro(null);
+      
+      console.log('📚 Carregando histórico para conversa:', conversationId);
+      
+      const { data, error } = await supabase
+        .from('oraculo_historico')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao carregar histórico:', error);
+        throw error;
+      }
+
+      const historicoMessages: Message[] = (data || []).map((record: any) => ({
+        id: record.id,
+        role: record.role,
+        content: record.content || '',
+        sources: record.sources,
+        status: 'complete',
+        timestamp: record.created_at,
+      }));
+
+      console.log('✅ Histórico carregado:', historicoMessages.length, 'mensagens');
+      setMessages(historicoMessages);
+    } catch (error: any) {
+      console.error('Erro ao carregar histórico:', error);
+      setErro('Erro ao carregar histórico da conversa');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const limparMensagens = useCallback(() => {
     setMessages([]);
     setErro(null);
@@ -145,6 +182,7 @@ export function useOraculoAsync() {
   return {
     enviarPergunta,
     atualizarMensagemAssistente,
+    carregarHistorico,
     limparMensagens,
     loading,
     messages,
