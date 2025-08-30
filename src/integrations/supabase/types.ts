@@ -276,6 +276,33 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_app: {
+        Row: {
+          chave: string
+          created_at: string | null
+          descricao: string | null
+          id: number
+          updated_at: string | null
+          valor: Json | null
+        }
+        Insert: {
+          chave: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: number
+          updated_at?: string | null
+          valor?: Json | null
+        }
+        Update: {
+          chave?: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: number
+          updated_at?: string | null
+          valor?: Json | null
+        }
+        Relationships: []
+      }
       convites: {
         Row: {
           aceito: boolean | null
@@ -619,6 +646,36 @@ export type Database = {
           tokens_usados?: number | null
           updated_at?: string
           usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      oraculo_historico: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string | null
+          id: string
+          role: string
+          sources: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+          sources?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          sources?: Json | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1058,9 +1115,20 @@ export type Database = {
           total_consultas: number
         }[]
       }
+      get_pending_embeddings: {
+        Args: { limit_count: number }
+        Returns: {
+          contexto_completo: string
+          id: string
+        }[]
+      }
       get_shared_experiment: {
         Args: { token: string }
         Returns: Json
+      }
+      get_user_role: {
+        Args: { p_user_id: string }
+        Returns: string
       }
       halfvec_avg: {
         Args: { "": number[] }
@@ -1120,6 +1188,19 @@ export type Database = {
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: unknown
+      }
+      match_experimentos: {
+        Args: {
+          match_count: number
+          match_threshold: number
+          query_embedding: string
+        }
+        Returns: {
+          contexto_completo: string
+          id: string
+          nome: string
+          similarity: number
+        }[]
       }
       match_experiments: {
         Args: {

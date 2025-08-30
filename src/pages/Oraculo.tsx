@@ -1,26 +1,65 @@
-import { useState, FormEvent } from "react";
-import { Brain, Loader2, Sparkles } from "lucide-react";
+
+import { useState, useEffect, FormEvent } from "react";
+import { Brain, Loader2, Sparkles, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link } from "react-router-dom";
-import { useOraculo } from "@/hooks/useOraculo";
+import { useOraculoAsync } from "@/hooks/useOraculoAsync";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
-
-interface Fonte {
-  id: string;
-  nome: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Oraculo() {
   const [pergunta, setPergunta] = useState("");
-  const [buscaFeita, setBuscaFeita] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const { consultarOraculo, loading, resposta, limparResposta } = useOraculo();
+  const { enviarPergunta, atualizarMensagemAssistente, limparMensagens, loading, messages, erro } = useOraculoAsync();
   const { user } = useAuth();
+
+  // Configurar subscrição Realtime
+  useEffect(() => {
+    if (!conversationId || !user?.id) return;
+
+    console.log('🔄 Configurando Realtime para conversation:', conversationId);
+
+    const channel = supabase
+      .channel('oraculo-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'oraculo_historico',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          console.log('📨 Nova mensagem recebida via Realtime:', payload);
+          const newMessage = payload.new;
+          
+          // Só processar mensagens do assistente
+          if (newMessage.role === 'assistant' && newMessage.content) {
+            console.log('🤖 Atualizando mensagem do assistente:', newMessage.content?.substring(0, 50));
+            atualizarMensagemAssistente(newMessage.content, newMessage.sources);
+            
+            toast.success('Resposta recebida!', {
+              description: 'O Oráculo concluiu sua análise'
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Status da subscrição Realtime:', status);
+      });
+
+    // Cleanup
+    return () => {
+      console.log('🧹 Removendo subscrição Realtime');
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, user?.id, atualizarMensagemAssistente]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,8 +70,6 @@ export default function Oraculo() {
       return;
     }
 
-    setBuscaFeita(true);
-    
     // Gerar conversationId se não existir
     let currentConversationId = conversationId;
     if (!currentConversationId) {
@@ -40,23 +77,20 @@ export default function Oraculo() {
       setConversationId(currentConversationId);
     }
     
-    try {
-      await consultarOraculo(pergunta, '', 'geral', currentConversationId, user.id);
-    } catch (error) {
-      console.error("Erro na consulta:", error);
-      toast.error("Erro ao consultar o Oráculo. Verifique as configurações.");
+    const sucesso = await enviarPergunta(pergunta, currentConversationId, user.id);
+    if (sucesso) {
+      setPergunta(""); // Limpar input apenas se enviou com sucesso
     }
   };
 
   const resetBusca = () => {
-    setBuscaFeita(false);
-    setPergunta("");
     setConversationId(null);
-    limparResposta();
+    setPergunta("");
+    limparMensagens();
   };
 
-  if (!buscaFeita) {
-    // Layout centralizado para primeira consulta
+  // Layout centralizado para primeira consulta
+  if (messages.length === 0) {
     return (
       <div className="flex justify-center items-center h-full">
         <div className="max-w-2xl w-full space-y-6 p-6">
@@ -73,6 +107,12 @@ export default function Oraculo() {
               </p>
             </div>
           </div>
+
+          {erro && (
+            <Alert variant="destructive">
+              <AlertDescription>{erro}</AlertDescription>
+            </Alert>
+          )}
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -96,7 +136,7 @@ export default function Oraculo() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Consultando...
+                  Enviando...
                 </>
               ) : (
                 <>
@@ -111,10 +151,10 @@ export default function Oraculo() {
     );
   }
 
-  // Layout normal no topo da página após primeira consulta
+  // Layout de chat após primeira consulta
   return (
-    <div className="space-y-6">
-      {/* Header com nova consulta */}
+    <div className="space-y-6 h-full flex flex-col">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-lg">
@@ -128,11 +168,114 @@ export default function Oraculo() {
           </div>
         </div>
         <Button variant="outline" onClick={resetBusca}>
-          Nova Consulta
+          Nova Conversa
         </Button>
       </div>
 
-      {/* Nova pergunta */}
+      {erro && (
+        <Alert variant="destructive">
+          <AlertDescription>{erro}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Área de mensagens */}
+      <div className="flex-1 space-y-6 overflow-auto">
+        {messages.map((message) => (
+          <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] ${
+              message.role === 'user' 
+                ? 'bg-primary text-primary-foreground rounded-lg p-4' 
+                : 'bg-background border rounded-lg p-6'
+            }`}>
+              {message.role === 'user' ? (
+                <p>{message.content}</p>
+              ) : (
+                <>
+                  {message.status === 'loading' ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>O Oráculo está analisando sua pergunta...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Resposta do assistente */}
+                      <div className="prose dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content || "Resposta não disponível"}
+                        </ReactMarkdown>
+                      </div>
+
+                      {/* Fontes consultadas */}
+                      {message.sources && Array.isArray(message.sources) && message.sources.length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">Fontes Consultadas</h3>
+                          <div className="bg-muted/30 rounded-lg p-4">
+                            <ul className="space-y-2">
+                              {message.sources.map((fonte: any, index: number) => {
+                                if (typeof fonte === 'string') {
+                                  return (
+                                    <li key={index}>
+                                      <span className="text-muted-foreground">• {fonte}</span>
+                                    </li>
+                                  );
+                                } else if (fonte && typeof fonte === 'object') {
+                                  const id = fonte.id || fonte.experimentoId || fonte.experiment_id;
+                                  const nome = fonte.nome || fonte.name || fonte.title || fonte.filename;
+                                  const url = fonte.url || fonte.link;
+                                  
+                                  if (id && nome) {
+                                    return (
+                                      <li key={id || index}>
+                                        <Link
+                                          to={`/experimentos/${id}`}
+                                          className="text-primary hover:underline"
+                                        >
+                                          • {nome}
+                                        </Link>
+                                      </li>
+                                    );
+                                  } else if (url && nome) {
+                                    return (
+                                      <li key={index}>
+                                        <a
+                                          href={url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-primary hover:underline"
+                                        >
+                                          • {nome}
+                                        </a>
+                                      </li>
+                                    );
+                                  } else if (nome) {
+                                    return (
+                                      <li key={index}>
+                                        <span className="text-muted-foreground">• {nome}</span>
+                                      </li>
+                                    );
+                                  }
+                                }
+                                
+                                return (
+                                  <li key={index}>
+                                    <span className="text-muted-foreground">• Fonte não identificada</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Input para nova pergunta */}
       <form onSubmit={onSubmit} className="flex gap-2">
         <Input
           type="text"
@@ -146,120 +289,15 @@ export default function Oraculo() {
         <Button 
           type="submit"
           disabled={!pergunta.trim() || loading}
+          size="icon"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <Sparkles className="w-4 h-4" />
+            <Send className="w-4 h-4" />
           )}
         </Button>
       </form>
-
-      {/* Área de resposta */}
-      {loading && (
-        <div className="flex items-center justify-center p-8">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Processando sua consulta...</span>
-          </div>
-        </div>
-      )}
-
-      {!loading && resposta && (
-        <div className="space-y-6">
-          {/* Debug Panel - Remover após diagnóstico */}
-          <details className="bg-muted/50 rounded-lg p-4 text-xs">
-            <summary className="cursor-pointer font-mono text-muted-foreground mb-2">
-              🔧 Debug - Resposta Completa (Clique para expandir)
-            </summary>
-            <pre className="whitespace-pre-wrap overflow-auto max-h-40 bg-background/50 p-2 rounded">
-              {JSON.stringify(resposta, null, 2)}
-            </pre>
-          </details>
-
-          {/* Resposta da IA */}
-          <div className="bg-background border rounded-lg p-6">
-            <div className="prose dark:prose-invert max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {resposta.resposta?.resposta_completa || 
-                 resposta.resposta?.resumo || 
-                 "Resposta não disponível"}
-              </ReactMarkdown>
-            </div>
-          </div>
-
-          {/* Fontes consultadas */}
-          {resposta.metadados?.fontes && Array.isArray(resposta.metadados.fontes) && resposta.metadados.fontes.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Fontes Consultadas</h3>
-              <div className="bg-muted/30 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {resposta.metadados.fontes.map((fonte: any, index: number) => {
-                    // Handle different fonte formats
-                    let id, nome, url;
-                    
-                    if (typeof fonte === 'string') {
-                      // Simple string format
-                      return (
-                        <li key={index}>
-                          <span className="text-muted-foreground">• {fonte}</span>
-                        </li>
-                      );
-                    } else if (fonte && typeof fonte === 'object') {
-                      // Object format - try different property combinations
-                      id = fonte.id || fonte.experimentoId || fonte.experiment_id;
-                      nome = fonte.nome || fonte.name || fonte.title || fonte.filename;
-                      url = fonte.url || fonte.link;
-                      
-                      if (id && nome) {
-                        // Link to experiment
-                        return (
-                          <li key={id || index}>
-                            <Link
-                              to={`/experimentos/${id}`}
-                              className="text-primary hover:underline"
-                            >
-                              • {nome}
-                            </Link>
-                          </li>
-                        );
-                      } else if (url && nome) {
-                        // External link
-                        return (
-                          <li key={index}>
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline"
-                            >
-                              • {nome}
-                            </a>
-                          </li>
-                        );
-                      } else if (nome) {
-                        // Just display name
-                        return (
-                          <li key={index}>
-                            <span className="text-muted-foreground">• {nome}</span>
-                          </li>
-                        );
-                      }
-                    }
-                    
-                    // Fallback
-                    return (
-                      <li key={index}>
-                        <span className="text-muted-foreground">• Fonte não identificada</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,1 +1,5 @@
+
 project_id = "zowjxaschkqivrltpfmp"
+
+[functions.oraculo-trigger]
+verify_jwt = true
