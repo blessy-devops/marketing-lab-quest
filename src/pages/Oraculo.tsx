@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link } from "react-router-dom";
+import { useOraculo } from "@/hooks/useOraculo";
+import { toast } from "sonner";
 
 interface Fonte {
   id: string;
@@ -13,44 +15,27 @@ interface Fonte {
 
 export default function Oraculo() {
   const [pergunta, setPergunta] = useState("");
-  const [resposta, setResposta] = useState("");
-  const [fontes, setFontes] = useState<Fonte[]>([]);
-  const [loading, setLoading] = useState(false);
   const [buscaFeita, setBuscaFeita] = useState(false);
+  const { consultarOraculo, loading, resposta, limparResposta } = useOraculo();
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!pergunta.trim()) return;
 
-    setLoading(true);
     setBuscaFeita(true);
-
+    
     try {
-      const response = await fetch("https://n8n.useblessy.com.br/webhook/oraculo-agentes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pergunta }),
-      });
-
-      const data = await response.json();
-      setResposta(data.resposta || "Resposta não disponível");
-      setFontes(data.fontes || []);
+      await consultarOraculo(pergunta);
     } catch (error) {
       console.error("Erro na consulta:", error);
-      setResposta("Erro ao consultar o Oráculo. Tente novamente.");
-      setFontes([]);
-    } finally {
-      setLoading(false);
+      toast.error("Erro ao consultar o Oráculo. Verifique as configurações.");
     }
   };
 
   const resetBusca = () => {
     setBuscaFeita(false);
     setPergunta("");
-    setResposta("");
-    setFontes([]);
+    limparResposta();
   };
 
   if (!buscaFeita) {
@@ -169,18 +154,20 @@ export default function Oraculo() {
           <div className="bg-background border rounded-lg p-6">
             <div className="prose prose-gray max-w-none">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {resposta}
+                {resposta.resposta?.resposta_completa || 
+                 resposta.resposta?.resumo || 
+                 "Resposta não disponível"}
               </ReactMarkdown>
             </div>
           </div>
 
           {/* Fontes consultadas */}
-          {fontes.length > 0 && (
+          {resposta.metadados?.fontes && resposta.metadados.fontes.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Fontes Consultadas</h3>
               <div className="bg-muted/30 rounded-lg p-4">
                 <ul className="space-y-2">
-                  {fontes.map((fonte) => (
+                  {resposta.metadados.fontes.map((fonte: Fonte) => (
                     <li key={fonte.id}>
                       <Link
                         to={`/experimentos/${fonte.id}`}

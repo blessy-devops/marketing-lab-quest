@@ -42,11 +42,51 @@ interface OraculoResponse {
 }
 
 class OraculoService {
-  private baseUrl = import.meta.env.VITE_ORACULO_WEBHOOK_URL;
+  private baseUrl: string | null = null;
+
+  private async getWebhookUrl(): Promise<string> {
+    if (this.baseUrl) {
+      return this.baseUrl;
+    }
+
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        "https://zowjxaschkqivrltpfmp.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpvd2p4YXNjaGtxaXZybHRwZm1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNTQzNzMsImV4cCI6MjA2OTYzMDM3M30.93njseLeE9y7KvAZFiPBL_Az4Kt38rAByifwVfVyi6U"
+      );
+      
+      const { data } = await supabase
+        .from('configuracoes_app')
+        .select('valor')
+        .eq('chave', 'ORACULO_WEBHOOK_URL')
+        .single();
+
+      if (data?.valor) {
+        this.baseUrl = data.valor as string;
+        console.log('URL do Oráculo carregada:', this.baseUrl);
+        return this.baseUrl;
+      }
+    } catch (error) {
+      console.warn('Erro ao carregar URL do banco:', error);
+    }
+
+    // Fallback para .env
+    const envUrl = import.meta.env.VITE_ORACULO_WEBHOOK_URL;
+    if (envUrl) {
+      this.baseUrl = envUrl;
+      console.log('Usando URL do .env:', this.baseUrl);
+      return this.baseUrl;
+    }
+
+    throw new Error('URL do Oráculo não configurada');
+  }
 
   async consultar(dados: OraculoRequest): Promise<OraculoResponse> {
     try {
-      const response = await fetch(this.baseUrl, {
+      const webhookUrl = await this.getWebhookUrl();
+      
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,28 +98,42 @@ class OraculoService {
         throw new Error(`Erro HTTP: ${response.status}`);
       }
 
-      const resultado: N8nResponse[] = await response.json();
+      const resultado = await response.json();
       console.log('Resposta do N8N:', resultado);
 
-      // N8N retorna um array, pegamos o primeiro item
-      if (!resultado || !Array.isArray(resultado) || resultado.length === 0) {
-        throw new Error('Resposta vazia ou formato inválido do servidor');
-      }
+      // Detectar formato da resposta
+      let respostaParsed: any;
+      let metadados: any = {};
 
-      const n8nData = resultado[0];
-      
-      // Parse da string JSON na resposta
-      let respostaParsed;
-      try {
-        respostaParsed = JSON.parse(n8nData.resposta);
-      } catch (parseError) {
-        console.error('Erro ao fazer parse da resposta:', parseError);
-        throw new Error('Formato de resposta inválido');
+      if (Array.isArray(resultado) && resultado.length > 0) {
+        // Formato N8N array
+        const n8nData = resultado[0];
+        try {
+          respostaParsed = JSON.parse(n8nData.resposta);
+          metadados = {
+            id: n8nData.id,
+            tokens_usados: n8nData.tokens_usados,
+            tempo_resposta_ms: n8nData.tempo_resposta_ms,
+            hit_count: n8nData.hit_count,
+            cache: n8nData.hit_count > 0,
+          };
+        } catch (parseError) {
+          console.error('Erro ao fazer parse da resposta:', parseError);
+          throw new Error('Formato de resposta inválido');
+        }
+      } else if (resultado && typeof resultado === 'object') {
+        // Formato objeto direto
+        respostaParsed = resultado.resposta || resultado;
+        metadados = {
+          fontes: resultado.fontes || [],
+        };
+      } else {
+        throw new Error('Resposta vazia ou formato inválido do servidor');
       }
 
       // Mapear para o formato esperado pelo componente
       const oraculoResponse: OraculoResponse = {
-        pergunta: n8nData.pergunta,
+        pergunta: dados.pergunta,
         resposta: {
           resumo: respostaParsed.resumo,
           acoes: respostaParsed.acoes,
@@ -90,12 +144,7 @@ class OraculoService {
         },
         metadados: {
           fonte: 'N8N Webhook',
-          id: n8nData.id,
-          tokens_usados: n8nData.tokens_usados,
-          tempo_resposta_ms: n8nData.tempo_resposta_ms,
-          hit_count: n8nData.hit_count,
-          cache: n8nData.hit_count > 0,
-          processado_em: n8nData.created_at,
+          ...metadados,
         }
       };
 
