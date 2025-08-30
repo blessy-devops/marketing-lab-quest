@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { NewExperimentShellSkeleton } from '@/components/ui/page-shell-skeleton';
 import { UnitSelector } from "@/components/forms/UnitSelector";
 import { Stepper, type Step } from "@/components/ui/stepper";
+import { NumericInput } from "@/components/ui/NumericInput";
 import { useFormAutoSave } from "@/hooks/useFormAutoSave";
 
 interface FormData {
@@ -1013,7 +1014,7 @@ export default function NewExperiment() {
                         )}
                       />
                     </div>
-                    <div className="w-28">
+                     <div className="w-28">
                       <FormField
                         control={form.control}
                         name={`metricas.${index}.valor`}
@@ -1023,15 +1024,9 @@ export default function NewExperiment() {
                               {tipoCadastro === 'realizado' ? 'Valor Realizado' : 'Valor Esperado'}
                             </FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.01"
-                                placeholder="0.00"
-                                {...field}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  field.onChange(value === '' ? '' : parseFloat(value));
-                                }}
+                              <NumericInput 
+                                field={field}
+                                placeholder="0,00"
                               />
                             </FormControl>
                             <FormMessage />
@@ -1049,15 +1044,9 @@ export default function NewExperiment() {
                               {tipoCadastro === 'realizado' ? 'Valor Anterior (opcional)' : 'Valor Atual (opcional)'}
                             </FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={field.value ?? ''}
-                                onChange={(e) => {
-                                  const v = e.target.value;
-                                  field.onChange(v === '' ? undefined : parseFloat(v));
-                                }}
+                              <NumericInput 
+                                field={field}
+                                placeholder="0,00"
                               />
                             </FormControl>
                             <FormMessage />

@@ -26,6 +26,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import { UnitSelector } from "@/components/forms/UnitSelector";
 import { TipoExperimentoSelector } from "@/components/forms/TipoExperimentoSelector";
+import { NumericInput } from "@/components/ui/NumericInput";
 
 interface FormData {
   nome: string;
@@ -812,11 +813,15 @@ export default function EditExperiment() {
                         // Para experimentos futuros - apenas valor esperado
                         <div className="space-y-2">
                           <Label>Valor Esperado</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0"
-                            {...form.register(`metricas.${index}.valorEsperado`)}
+                          <FormField
+                            control={form.control}
+                            name={`metricas.${index}.valorEsperado`}
+                            render={({ field }) => (
+                              <NumericInput
+                                field={field}
+                                placeholder="0,00"
+                              />
+                            )}
                           />
                         </div>
                       ) : (
@@ -824,20 +829,28 @@ export default function EditExperiment() {
                         <>
                           <div className="space-y-2">
                             <Label>Valor Realizado</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="0"
-                              {...form.register(`metricas.${index}.valorRealizado`)}
+                            <FormField
+                              control={form.control}
+                              name={`metricas.${index}.valorRealizado`}
+                              render={({ field }) => (
+                                <NumericInput
+                                  field={field}
+                                  placeholder="0,00"
+                                />
+                              )}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label>Valor Anterior</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="0"
-                              {...form.register(`metricas.${index}.baseline`)}
+                            <FormField
+                              control={form.control}
+                              name={`metricas.${index}.baseline`}
+                              render={({ field }) => (
+                                <NumericInput
+                                  field={field}
+                                  placeholder="0,00"
+                                />
+                              )}
                             />
                           </div>
                         </>
