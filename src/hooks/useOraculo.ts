@@ -10,7 +10,9 @@ export function useOraculo() {
   const consultarOraculo = useCallback(async (
     pergunta: string,
     contexto: string = '',
-    tipo: string = 'geral'
+    tipo: string = 'geral',
+    conversationId?: string,
+    userId?: string
   ) => {
     // Validação
     if (!pergunta || pergunta.trim().length < 10) {
@@ -37,8 +39,9 @@ export function useOraculo() {
       const resultado = await oraculoService.consultar({
         pergunta: pergunta.trim(),
         contexto: contexto.trim(),
-        tipo
-      });
+        tipo,
+        conversation_id: conversationId,
+      }, userId);
 
       // Verificar resposta
       if (resultado && resultado.resposta) {

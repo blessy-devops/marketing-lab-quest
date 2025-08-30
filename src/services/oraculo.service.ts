@@ -2,6 +2,7 @@ interface OraculoRequest {
   pergunta: string;
   contexto?: string;
   tipo?: string;
+  conversation_id?: string;
 }
 
 interface N8nResponse {
@@ -82,7 +83,9 @@ class OraculoService {
     throw new Error('URL do Oráculo não configurada');
   }
 
-  async consultar(dados: OraculoRequest): Promise<OraculoResponse> {
+  async consultar(dados: OraculoRequest): Promise<OraculoResponse>;
+  async consultar(dados: OraculoRequest, userId?: string): Promise<OraculoResponse>;
+  async consultar(dados: OraculoRequest, userId?: string): Promise<OraculoResponse> {
     const webhookUrl = await this.getWebhookUrl();
     
     console.log('Chamando Oráculo em:', webhookUrl);
@@ -93,12 +96,24 @@ class OraculoService {
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos
 
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Adicionar x-user-id se userId foi fornecido
+      if (userId) {
+        headers['x-user-id'] = userId;
+      }
+
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dados),
+        headers,
+        body: JSON.stringify({
+          pergunta: dados.pergunta,
+          contexto: dados.contexto,
+          tipo: dados.tipo,
+          conversation_id: dados.conversation_id,
+        }),
         signal: controller.signal,
       });
 

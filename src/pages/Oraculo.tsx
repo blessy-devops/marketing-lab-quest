@@ -6,7 +6,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link } from "react-router-dom";
 import { useOraculo } from "@/hooks/useOraculo";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
 
 interface Fonte {
   id: string;
@@ -16,16 +18,25 @@ interface Fonte {
 export default function Oraculo() {
   const [pergunta, setPergunta] = useState("");
   const [buscaFeita, setBuscaFeita] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const { consultarOraculo, loading, resposta, limparResposta } = useOraculo();
+  const { user } = useAuth();
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!pergunta.trim()) return;
+    if (!pergunta.trim() || !user?.id) return;
 
     setBuscaFeita(true);
     
+    // Gerar conversationId se não existir
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      currentConversationId = uuidv4();
+      setConversationId(currentConversationId);
+    }
+    
     try {
-      await consultarOraculo(pergunta);
+      await consultarOraculo(pergunta, '', 'geral', currentConversationId, user.id);
     } catch (error) {
       console.error("Erro na consulta:", error);
       toast.error("Erro ao consultar o Oráculo. Verifique as configurações.");
@@ -35,6 +46,7 @@ export default function Oraculo() {
   const resetBusca = () => {
     setBuscaFeita(false);
     setPergunta("");
+    setConversationId(null);
     limparResposta();
   };
 
