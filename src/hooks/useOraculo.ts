@@ -36,15 +36,19 @@ export function useOraculo() {
       loadingToastId = toast.loading('Consultando o Oráculo...');
 
       // Fazer a chamada
+      console.log('🔍 Consultando Oráculo com:', { pergunta: pergunta.trim(), tipo, conversationId, userId });
       const resultado = await oraculoService.consultar({
         pergunta: pergunta.trim(),
         contexto: contexto.trim(),
         tipo,
         conversation_id: conversationId,
       }, userId);
+      console.log('📥 Resposta recebida:', resultado);
 
       // Verificar resposta
+      console.log('🔎 Verificando resultado:', resultado);
       if (resultado && resultado.resposta) {
+        console.log('✅ Resposta válida encontrada, atualizando estado');
         setResposta(resultado);
         
         // Salvar no histórico

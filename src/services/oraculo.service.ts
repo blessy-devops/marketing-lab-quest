@@ -120,6 +120,13 @@ class OraculoService {
         headers['x-user-id'] = userId;
       }
 
+      console.log('🚀 Enviando para webhook:', webhookUrl, {
+        pergunta: dados.pergunta,
+        contexto: dados.contexto,
+        tipo: dados.tipo,
+        conversation_id: dados.conversation_id,
+      });
+      
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers,
@@ -139,6 +146,7 @@ class OraculoService {
       }
 
       const resultado = await response.json();
+      console.log('📨 Resposta do webhook (raw):', resultado);
       
       const totalTime = Date.now() - startTime;
       console.log(`Tempo total (ms): ${totalTime}`);
@@ -147,11 +155,15 @@ class OraculoService {
       let respostaParsed: any;
       let metadados: any = {};
 
+      console.log('🔄 Processando resposta. É array?', Array.isArray(resultado), 'Length:', resultado?.length);
+
       if (Array.isArray(resultado) && resultado.length > 0) {
         const n8nData = resultado[0];
+        console.log('📦 Primeiro item do array:', n8nData);
         
         // Verificar se é o novo formato com 'content' e 'sources'
         if ('content' in n8nData && 'sources' in n8nData) {
+          console.log('✨ Detectado novo formato N8N com content e sources');
           // Novo formato N8N
           respostaParsed = {
             resposta_completa: n8nData.content
@@ -165,6 +177,8 @@ class OraculoService {
             fontes: n8nData.sources || [],
             tempo_resposta_ms: totalTime,
           };
+          console.log('📋 Resposta processada:', respostaParsed);
+          console.log('🏷️  Metadados:', metadados);
         } else {
           // Formato N8N antigo
           try {

@@ -167,6 +167,16 @@ export default function Oraculo() {
 
       {!loading && resposta && (
         <div className="space-y-6">
+          {/* Debug Panel - Remover após diagnóstico */}
+          <details className="bg-muted/50 rounded-lg p-4 text-xs">
+            <summary className="cursor-pointer font-mono text-muted-foreground mb-2">
+              🔧 Debug - Resposta Completa (Clique para expandir)
+            </summary>
+            <pre className="whitespace-pre-wrap overflow-auto max-h-40 bg-background/50 p-2 rounded">
+              {JSON.stringify(resposta, null, 2)}
+            </pre>
+          </details>
+
           {/* Resposta da IA */}
           <div className="bg-background border rounded-lg p-6">
             <div className="prose dark:prose-invert max-w-none">
