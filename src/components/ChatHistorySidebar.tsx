@@ -92,7 +92,12 @@ export function ChatHistorySidebar({
     }
   };
 
-  const truncateMessage = (message: string, maxLength: number = 50) => {
+  const truncateMessage = (message: string | null | undefined, maxLength: number = 50) => {
+    // Handle null/undefined cases
+    if (!message || typeof message !== 'string') {
+      return 'Conversa sem título';
+    }
+    
     if (message.length <= maxLength) return message;
     return message.slice(0, maxLength) + '...';
   };
