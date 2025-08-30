@@ -179,7 +179,7 @@ export default function Oraculo() {
           </div>
 
           {/* Fontes consultadas */}
-          {resposta.metadados?.fontes && resposta.metadados.fontes.length > 0 && (
+          {resposta.metadados?.fontes && Array.isArray(resposta.metadados.fontes) && resposta.metadados.fontes.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Fontes Consultadas</h3>
               <div className="bg-muted/30 rounded-lg p-4">
