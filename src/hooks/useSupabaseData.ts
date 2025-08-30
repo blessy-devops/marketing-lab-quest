@@ -98,19 +98,25 @@ export function useExperimentosComResultados() {
   useEffect(() => {
     async function fetchData() {
       try {
+        // Fetch experiments first
         const { data: experimentosData, error: expError } = await supabase
           .from('experimentos')
-          .select(`
-            *,
-            resultados (*)
-          `)
+          .select('*')
           .order('created_at', { ascending: false });
 
         if (expError) throw expError;
 
+        // Fetch results separately
+        const { data: resultadosData, error: resError } = await supabase
+          .from('resultados')
+          .select('*');
+
+        if (resError) throw resError;
+
+        // Combine the data
         const processedData = experimentosData?.map(exp => ({
           ...exp,
-          resultado: exp.resultados?.[0] || undefined
+          resultado: resultadosData?.find(res => res.experimento_id === exp.id) || undefined
         })) || [];
 
         setData(processedData);
