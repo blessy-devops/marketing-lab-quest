@@ -470,7 +470,7 @@ export default function NewExperiment() {
       case 2: // Channels
         return values.canais.length > 0 && values.hipotese;
       case 3: // Metrics
-        return values.metricas.some(m => m.nome);
+        return true; // Allow empty metrics
       case 4: // Results (only for realized experiments)
         return tipoCadastro === 'futuro' || (values.rating !== undefined);
       case 5: // Attachments
