@@ -53,6 +53,8 @@ interface FormData {
   status: string;
   canais: string[];
   hipotese: string;
+  contexto_narrativo?: string;
+  contexto_negocio?: string;
   metricas: Array<{
     nome: string;
     valor: number;
@@ -139,6 +141,8 @@ export default function NewExperiment() {
       status: "planejado",
       canais: [],
       hipotese: "",
+      contexto_narrativo: "",
+      contexto_negocio: "",
       metricas: [{ nome: "", valor: 0, unidade: "", baseline: undefined }],
       anexos: [],
       rating: undefined,
@@ -294,7 +298,15 @@ export default function NewExperiment() {
         subtipo_customizado: data.subtipo_customizado,
         base_conhecimento: data.base_conhecimento,
         experimento_sucesso: data.sucesso || false,
-        tags: data.tags
+        tags: data.tags,
+        contexto_narrativo: data.contexto_narrativo,
+        contexto_negocio: (() => {
+          try {
+            return data.contexto_negocio ? JSON.parse(data.contexto_negocio) : {};
+          } catch {
+            return {};
+          }
+        })()
       };
 
       const { data: novoExperimento, error: experimentoError } = await supabase
@@ -801,12 +813,23 @@ export default function NewExperiment() {
                     Descreva sua hipótese para o experimento
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <FormField
                     control={form.control}
                     name="hipotese"
                     render={({ field }) => (
                       <FormItem>
+                        <div className="flex justify-between items-center mb-2">
+                          <FormLabel>Hipótese</FormLabel>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            onClick={() => form.setValue('hipotese', 'ACREDITO QUE [AÇÃO] PARA [PÚBLICO-ALVO] RESULTARÁ EM [RESULTADO] MEDIDO POR [MÉTRICA]')}
+                          >
+                            Usar Template
+                          </Button>
+                        </div>
                         <FormControl>
                           <Textarea 
                             placeholder="Se fizermos X, esperamos que Y aconteça porque Z"
@@ -814,6 +837,58 @@ export default function NewExperiment() {
                             {...field} 
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contexto Adicional (para IA)</CardTitle>
+                  <CardDescription>
+                    Informações adicionais que ajudam a IA a entender melhor o experimento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="contexto_narrativo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição Narrativa</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Descreva o contexto e detalhes do experimento de forma narrativa..."
+                            rows={3}
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Use este campo para adicionar contexto narrativo que ajude a IA a entender melhor o experimento
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="contexto_negocio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contexto de Negócio (JSON)</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder='{ "momento": "black_friday_2025", "orcamento": "10k" }'
+                            rows={3}
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Adicione informações estruturadas sobre o contexto de negócio em formato JSON
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1200,7 +1275,7 @@ export default function NewExperiment() {
                         <FormLabel>Aprendizados</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="O que aprendemos..."
+                            placeholder="Ex: INSIGHT PRINCIPAL: Clientes reagem melhor a descontos progressivos. | APLICÁVEL QUANDO: Em campanhas de reativação com carrinhos abandonados."
                             rows={3}
                             {...field}
                           />

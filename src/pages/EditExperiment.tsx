@@ -39,6 +39,8 @@ interface FormData {
   status: string;
   canais: string[] ;
   hipotese: string;
+  contexto_narrativo?: string;
+  contexto_negocio?: string;
   metricas: Array<{
     nome: string;
     valorEsperado?: string;
@@ -90,6 +92,8 @@ export default function EditExperiment() {
       status: "planejado",
       canais: [],
       hipotese: "",
+      contexto_narrativo: "",
+      contexto_negocio: "",
       metricas: [{ nome: "", valorEsperado: "", valorRealizado: "", baseline: "", unidade: "" }],
       base_conhecimento: true,
       gerar_playbook: false,
@@ -193,6 +197,8 @@ export default function EditExperiment() {
             status: exp.status ?? "planejado",
             canais: exp.canais ?? [],
             hipotese: exp.hipotese ?? "",
+            contexto_narrativo: (exp as any).contexto_narrativo ?? "",
+            contexto_negocio: typeof (exp as any).contexto_negocio === 'object' ? JSON.stringify((exp as any).contexto_negocio, null, 2) : (exp as any).contexto_negocio ?? "",
             data_inicio: exp.data_inicio ? new Date(exp.data_inicio) : undefined,
             data_fim: exp.data_fim ? new Date(exp.data_fim) : undefined,
             metricas: metricasArray.length > 0 ? metricasArray : [{ nome: "", valorEsperado: "", valorRealizado: "", baseline: "", unidade: "" }],
@@ -278,6 +284,14 @@ export default function EditExperiment() {
           status: data.status,
           canais: data.canais,
           hipotese: data.hipotese,
+          contexto_narrativo: data.contexto_narrativo,
+          contexto_negocio: (() => {
+            try {
+              return data.contexto_negocio ? JSON.parse(data.contexto_negocio) : {};
+            } catch {
+              return {};
+            }
+          })(),
           data_inicio: data.data_inicio?.toISOString().split('T')[0],
           data_fim: data.data_fim?.toISOString().split('T')[0],
           base_conhecimento: data.base_conhecimento,
@@ -452,7 +466,17 @@ export default function EditExperiment() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hipotese">Hipótese</Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="hipotese">Hipótese</Label>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    onClick={() => form.setValue('hipotese', 'ACREDITO QUE [AÇÃO] PARA [PÚBLICO-ALVO] RESULTARÁ EM [RESULTADO] MEDIDO POR [MÉTRICA]')}
+                  >
+                    Usar Template
+                  </Button>
+                </div>
                 <Textarea
                   id="hipotese"
                   placeholder="Descreva sua hipótese..."
@@ -462,6 +486,38 @@ export default function EditExperiment() {
                 {form.formState.errors.hipotese && (
                   <p className="text-sm text-destructive">{form.formState.errors.hipotese.message}</p>
                 )}
+              </div>
+
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
+                  Contexto Adicional (para IA)
+                </h4>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="contexto_narrativo">Descrição Narrativa</Label>
+                  <Textarea
+                    id="contexto_narrativo"
+                    placeholder="Descreva o contexto e detalhes do experimento de forma narrativa..."
+                    className="min-h-[80px]"
+                    {...form.register("contexto_narrativo")}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use este campo para adicionar contexto narrativo que ajude a IA a entender melhor o experimento
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contexto_negocio">Contexto de Negócio (JSON)</Label>
+                  <Textarea
+                    id="contexto_negocio"
+                    placeholder='{ "momento": "black_friday_2025", "orcamento": "10k" }'
+                    className="min-h-[80px]"
+                    {...form.register("contexto_negocio")}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Adicione informações estruturadas sobre o contexto de negócio em formato JSON
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
