@@ -285,13 +285,15 @@ export default function EditExperiment() {
           canais: data.canais,
           hipotese: data.hipotese,
           contexto_narrativo: data.contexto_narrativo,
-          contexto_negocio: (() => {
-            try {
-              return data.contexto_negocio ? JSON.parse(data.contexto_negocio) : {};
-            } catch {
-              return {};
-            }
-          })(),
+          contexto_negocio: {
+            canais: data.canais,
+            periodo: { 
+              inicio: data.data_inicio ? format(data.data_inicio, 'yyyy-MM-dd') : null,
+              fim: data.data_fim ? format(data.data_fim, 'yyyy-MM-dd') : null
+            },
+            responsavel: data.responsavel,
+            tipo_experimento_id: data.tipo_experimento_id
+          },
           data_inicio: data.data_inicio?.toISOString().split('T')[0],
           data_fim: data.data_fim?.toISOString().split('T')[0],
           base_conhecimento: data.base_conhecimento,
@@ -506,18 +508,6 @@ export default function EditExperiment() {
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="contexto_negocio">Contexto de Negócio (JSON)</Label>
-                  <Textarea
-                    id="contexto_negocio"
-                    placeholder='{ "momento": "black_friday_2025", "orcamento": "10k" }'
-                    className="min-h-[80px]"
-                    {...form.register("contexto_negocio")}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Adicione informações estruturadas sobre o contexto de negócio em formato JSON
-                  </p>
-                </div>
               </div>
             </CardContent>
           </Card>

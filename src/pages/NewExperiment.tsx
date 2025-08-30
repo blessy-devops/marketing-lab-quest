@@ -300,13 +300,15 @@ export default function NewExperiment() {
         experimento_sucesso: data.sucesso || false,
         tags: data.tags,
         contexto_narrativo: data.contexto_narrativo,
-        contexto_negocio: (() => {
-          try {
-            return data.contexto_negocio ? JSON.parse(data.contexto_negocio) : {};
-          } catch {
-            return {};
-          }
-        })()
+        contexto_negocio: {
+          canais: data.canais,
+          periodo: { 
+            inicio: data.data_inicio ? format(data.data_inicio, 'yyyy-MM-dd') : null,
+            fim: data.data_fim ? format(data.data_fim, 'yyyy-MM-dd') : null
+          },
+          responsavel: data.responsavel,
+          tipo_experimento_id: data.tipo_experimento_id
+        }
       };
 
       const { data: novoExperimento, error: experimentoError } = await supabase
@@ -873,26 +875,6 @@ export default function NewExperiment() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="contexto_negocio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contexto de Negócio (JSON)</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder='{ "momento": "black_friday_2025", "orcamento": "10k" }'
-                            rows={3}
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Adicione informações estruturadas sobre o contexto de negócio em formato JSON
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </CardContent>
               </Card>
 
