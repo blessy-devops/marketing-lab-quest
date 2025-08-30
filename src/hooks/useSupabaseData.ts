@@ -11,6 +11,8 @@ export interface Experimento {
   responsavel: string | null;
   canais: string[] | null;
   hipotese: string | null;
+  contexto_narrativo: string | null;
+  contexto_negocio: any | null;
   created_at: string;
   updated_at: string;
 }
