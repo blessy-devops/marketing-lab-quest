@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit2, Copy, Trash2, Plus, Upload, FileText, Image, Link, Calendar, User, Target, TrendingUp, CheckCircle, XCircle, MessageSquare, History, Send, Edit, X, Share2 } from "lucide-react";
+import { ArrowLeft, Edit2, Copy, Trash2, Plus, Upload, FileText, Image, Link, Calendar, User, Target, TrendingUp, CheckCircle, XCircle, MessageSquare, History, Send, Edit, X, Share2, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RestrictedButton } from "@/components/ui/restricted-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -36,6 +37,13 @@ const ExperimentDetails = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [metricas, setMetricas] = useState<Metrica[]>([]);
+  const [metricasAgrupadas, setMetricasAgrupadas] = useState<Record<string, {
+    nome: string;
+    unidade?: string;
+    baseline?: number;
+    esperada?: number;
+    realizada?: number;
+  }>>({});
   const [novoComentario, setNovoComentario] = useState("");
   const [editingText, setEditingText] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -69,6 +77,36 @@ const ExperimentDetails = () => {
         
         if (!error && data) {
           setMetricas(data);
+          
+          // Agrupar métricas por nome
+          const agrupadas = data.reduce((acc, metrica) => {
+            const { nome, unidade, valor, tipo } = metrica;
+            
+            if (!acc[nome]) {
+              acc[nome] = {
+                nome,
+                unidade,
+              };
+            }
+            
+            if (tipo === 'baseline') {
+              acc[nome].baseline = valor;
+            } else if (tipo === 'esperada') {
+              acc[nome].esperada = valor;
+            } else if (tipo === 'realizada') {
+              acc[nome].realizada = valor;
+            }
+            
+            return acc;
+          }, {} as Record<string, {
+            nome: string;
+            unidade?: string;
+            baseline?: number;
+            esperada?: number;
+            realizada?: number;
+          }>);
+          
+          setMetricasAgrupadas(agrupadas);
         }
       };
       fetchMetricas();
@@ -161,6 +199,33 @@ const ExperimentDetails = () => {
       console.error('Erro ao duplicar experimento:', error);
       toast.error('Erro ao duplicar experimento');
     }
+  };
+
+  // Funções auxiliares para a tabela de métricas
+  const formatNumber = (value: number | undefined): string => {
+    if (value === undefined || value === null) return '-';
+    return value.toFixed(2);
+  };
+
+  const calculatePercentage = (newValue: number | undefined, oldValue: number | undefined): string => {
+    if (!newValue || !oldValue || oldValue === 0) return '-';
+    const percentage = ((newValue / oldValue) - 1) * 100;
+    return percentage.toFixed(1);
+  };
+
+  const getVariationDisplay = (newValue: number | undefined, oldValue: number | undefined) => {
+    if (!newValue || !oldValue || oldValue === 0) {
+      return { text: '-', color: '', icon: null };
+    }
+    
+    const percentage = ((newValue / oldValue) - 1) * 100;
+    const isPositive = percentage > 0;
+    
+    return {
+      text: `${percentage > 0 ? '+' : ''}${percentage.toFixed(1)}%`,
+      color: isPositive ? 'text-green-600' : 'text-red-600',
+      icon: isPositive ? ArrowUp : ArrowDown
+    };
   };
 
   return (
@@ -396,34 +461,67 @@ const ExperimentDetails = () => {
             </Button>
           </div>
 
-          {metricas && metricas.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {metricas.map((metrica) => (
-                <Card key={metrica.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      {metrica.nome}
-                      <Badge variant={metrica.tipo === 'esperada' ? 'secondary' : 'default'}>
-                        {metrica.tipo}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold">
-                      {metrica.valor?.toFixed(2)} {metrica.unidade}
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2 mt-4">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all"
-                        style={{ 
-                          width: metrica.tipo === 'esperada' ? '50%' : '80%' 
-                        }}
-                      ></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+          {Object.keys(metricasAgrupadas).length > 0 ? (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-semibold">Métrica</TableHead>
+                      <TableHead className="text-center font-semibold">Baseline</TableHead>
+                      <TableHead className="text-center font-semibold">Esperado</TableHead>
+                      <TableHead className="text-center font-semibold">Realizado</TableHead>
+                      <TableHead className="text-center font-semibold">Resultado vs. Baseline (%)</TableHead>
+                      <TableHead className="text-center font-semibold">Resultado vs. Esperado (%)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(metricasAgrupadas).map(([nomeMetrica, metrica]) => {
+                      const variationBaseline = getVariationDisplay(metrica.realizada, metrica.baseline);
+                      const variationEsperada = getVariationDisplay(metrica.realizada, metrica.esperada);
+                      
+                      return (
+                        <TableRow key={nomeMetrica}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <div className="font-semibold">{metrica.nome}</div>
+                              {metrica.unidade && (
+                                <div className="text-sm text-muted-foreground">({metrica.unidade})</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {formatNumber(metrica.baseline)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {formatNumber(metrica.esperada)}
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">
+                            {formatNumber(metrica.realizada)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className={`flex items-center justify-center gap-1 ${variationBaseline.color}`}>
+                              {variationBaseline.icon && (
+                                <variationBaseline.icon className="h-3 w-3" />
+                              )}
+                              <span className="font-medium">{variationBaseline.text}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className={`flex items-center justify-center gap-1 ${variationEsperada.color}`}>
+                              {variationEsperada.icon && (
+                                <variationEsperada.icon className="h-3 w-3" />
+                              )}
+                              <span className="font-medium">{variationEsperada.text}</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardContent className="py-8 text-center">
@@ -616,109 +714,6 @@ const ExperimentDetails = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Seção de Comentários */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Comentários e Notas ({comentarios.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Formulário para novo comentário */}
-          {user && (
-            <div className="space-y-3">
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>
-                    {user.email?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-2">
-                  <Textarea
-                    placeholder="Adicionar comentário..."
-                    value={novoComentario}
-                    onChange={(e) => setNovoComentario(e.target.value)}
-                    className="min-h-[60px]"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      onClick={async () => {
-                        await adicionarComentario(novoComentario);
-                        setNovoComentario("");
-                      }}
-                      disabled={!novoComentario.trim()}
-                      size="sm"
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      Comentar
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Lista de comentários */}
-          {loadingComentarios ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex gap-3">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-16 w-full" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : comentarios.length > 0 ? (
-            <div className="space-y-4 mt-6">
-              {comentarios.map((comentario) => (
-                <ComentarioItem
-                  key={comentario.id}
-                  comentario={comentario}
-                  user={user}
-                  editingId={editingId}
-                  editingText={editingText}
-                  setEditingId={setEditingId}
-                  setEditingText={setEditingText}
-                  editarComentario={editarComentario}
-                  excluirComentario={excluirComentario}
-                  onEditClick={(comentario) => {
-                    setEditingId(comentario.id);
-                    setEditingText(comentario.texto);
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhum comentário ainda.</p>
-              <p className="text-sm">Seja o primeiro a comentar!</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Histórico de Alterações */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Histórico de Alterações
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 py-2">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">
-                  <strong>João Silva</strong> atualizou o status para "Concluído"
-                </p>
-                <p className="text-xs text-muted-foreground">16 de julho, 2024 - 14:30</p>
       {/* Modal de Exclusão */}
       {experimento && (
         <DeleteExperimentDialog
@@ -728,29 +723,6 @@ const ExperimentDetails = () => {
           experimentoNome={experimento.nome}
         />
       )}
-    </div>
-            </div>
-            <div className="flex items-center gap-3 py-2">
-              <div className="w-2 h-2 bg-secondary rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">
-                  <strong>Maria Santos</strong> adicionou métricas realizadas
-                </p>
-                <p className="text-xs text-muted-foreground">16 de julho, 2024 - 10:15</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 py-2">
-              <div className="w-2 h-2 bg-muted rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">
-                  <strong>João Silva</strong> criou o experimento
-                </p>
-                <p className="text-xs text-muted-foreground">15 de julho, 2024 - 09:00</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
