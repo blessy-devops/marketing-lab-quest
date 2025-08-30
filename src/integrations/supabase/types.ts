@@ -1126,6 +1126,14 @@ export type Database = {
         Args: { token: string }
         Returns: Json
       }
+      get_user_conversations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          conversation_id: string
+          first_message: string
+          last_updated: string
+        }[]
+      }
       get_user_role: {
         Args: { p_user_id: string }
         Returns: string
