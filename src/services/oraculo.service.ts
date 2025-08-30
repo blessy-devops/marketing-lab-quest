@@ -42,7 +42,7 @@ interface OraculoResponse {
 }
 
 class OraculoService {
-  private baseUrl = 'https://n8n.useblessy.com.br/webhook/oraculo-agentes';
+  private baseUrl = import.meta.env.VITE_ORACULO_WEBHOOK_URL;
 
   async consultar(dados: OraculoRequest): Promise<OraculoResponse> {
     try {
