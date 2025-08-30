@@ -100,7 +100,7 @@ export function useOraculoAsync() {
         description: 'O Oráculo está processando sua consulta'
       });
 
-      // Iniciar watchdog de 25s para fallback se Realtime falhar
+      // Iniciar watchdog de 30s para fallback silencioso se Realtime falhar
       setTimeout(() => {
         setMessages(prev => {
           const hasLoadingMessage = prev.some(msg => msg.role === 'assistant' && msg.status === 'loading');
@@ -111,7 +111,22 @@ export function useOraculoAsync() {
           }
           return prev;
         });
-      }, 25000);
+      }, 30000);
+
+      // Iniciar alerta de 2 minutos para resposta demorada
+      setTimeout(() => {
+        setMessages(prev => {
+          const hasLoadingMessage = prev.some(msg => msg.role === 'assistant' && msg.status === 'loading');
+          if (hasLoadingMessage) {
+            console.log('⚠️ Alerta: Resposta demorou mais de 2 minutos');
+            toast.warning('Resposta demorou', {
+              description: 'O Oráculo está demorando para responder. Pode haver alta demanda.',
+              duration: 5000
+            });
+          }
+          return prev;
+        });
+      }, 120000);
 
       return true;
 
