@@ -70,6 +70,8 @@ interface FormData {
   causas?: string;
   acoes?: string;
   aprendizados?: string;
+  sucesso?: boolean;
+  experimento_sucesso?: boolean;
   // Configurações de IA
   base_conhecimento?: boolean;
   gerar_playbook?: boolean;
@@ -144,6 +146,8 @@ export default function NewExperiment() {
       causas: "",
       acoes: "",
       aprendizados: "",
+      sucesso: false,
+      experimento_sucesso: false,
       base_conhecimento: true,
       gerar_playbook: false,
       tags: []
@@ -290,6 +294,7 @@ export default function NewExperiment() {
         subtipo_experimento_id: data.subtipo_experimento_id,
         subtipo_customizado: data.subtipo_customizado,
         base_conhecimento: data.base_conhecimento,
+        experimento_sucesso: data.experimento_sucesso || false,
         tags: data.tags
       };
 
@@ -354,7 +359,8 @@ export default function NewExperiment() {
             fatos: data.fatos,
             causas: data.causas,
             acoes: data.acoes,
-            aprendizados: data.aprendizados
+            aprendizados: data.aprendizados,
+            sucesso: data.sucesso || false
           });
 
         if (resultadoError) throw resultadoError;
@@ -1216,10 +1222,64 @@ export default function NewExperiment() {
                       </FormItem>
                     )}
                   />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                 </div>
+
+                 <div className="space-y-4 pt-4 border-t">
+                   <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
+                     Status do Experimento
+                   </h4>
+                   
+                   <div className="grid gap-4 md:grid-cols-2">
+                     <FormField
+                       control={form.control}
+                       name="sucesso"
+                       render={({ field }) => (
+                         <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                           <FormControl>
+                             <Checkbox
+                               checked={field.value}
+                               onCheckedChange={field.onChange}
+                             />
+                           </FormControl>
+                           <div className="space-y-1 leading-none">
+                             <FormLabel>
+                               Experimento bem-sucedido
+                             </FormLabel>
+                             <FormDescription className="text-xs">
+                               Marque se o experimento atingiu os objetivos esperados
+                             </FormDescription>
+                           </div>
+                         </FormItem>
+                       )}
+                     />
+
+                     <FormField
+                       control={form.control}
+                       name="experimento_sucesso"
+                       render={({ field }) => (
+                         <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                           <FormControl>
+                             <Checkbox
+                               checked={field.value}
+                               onCheckedChange={field.onChange}
+                             />
+                           </FormControl>
+                           <div className="space-y-1 leading-none">
+                             <FormLabel className="flex items-center gap-2">
+                               🏆 Destacar como sucesso
+                             </FormLabel>
+                             <FormDescription className="text-xs">
+                               Exibir ícone de troféu na galeria de experimentos
+                             </FormDescription>
+                           </div>
+                         </FormItem>
+                       )}
+                     />
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+           )}
 
           {/* Step 5: Attachments */}
           {currentStep === 5 && (
