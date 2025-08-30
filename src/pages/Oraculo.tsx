@@ -24,7 +24,12 @@ export default function Oraculo() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!pergunta.trim() || !user?.id) return;
+    if (!pergunta.trim()) return;
+    
+    if (!user?.id) {
+      toast.error("Você precisa estar logado para fazer consultas ao Oráculo");
+      return;
+    }
 
     setBuscaFeita(true);
     
