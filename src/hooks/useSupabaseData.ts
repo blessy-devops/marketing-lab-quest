@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -250,7 +251,16 @@ export function useEmbeddings(experimentoId?: string) {
         const { data, error } = await query;
 
         if (error) throw error;
-        setEmbeddings(data || []);
+        
+        // Convert string embeddings to number arrays
+        const processedData = data?.map(item => ({
+          ...item,
+          embedding: typeof item.embedding === 'string' 
+            ? JSON.parse(item.embedding) 
+            : item.embedding
+        })) || [];
+        
+        setEmbeddings(processedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar embeddings');
       } finally {
@@ -265,14 +275,27 @@ export function useEmbeddings(experimentoId?: string) {
 }
 
 export async function createEmbedding(embedding: Omit<ExperimentoEmbedding, 'id' | 'created_at'>) {
+  // Convert number array to string for storage
+  const embeddingForStorage = {
+    ...embedding,
+    embedding: JSON.stringify(embedding.embedding)
+  };
+
   const { data, error } = await supabase
     .from('experimento_embeddings')
-    .insert([embedding])
+    .insert([embeddingForStorage])
     .select()
     .single();
 
   if (error) throw error;
-  return data;
+  
+  // Convert back to number array for return
+  return {
+    ...data,
+    embedding: typeof data.embedding === 'string' 
+      ? JSON.parse(data.embedding) 
+      : data.embedding
+  };
 }
 
 export async function deleteEmbeddings(experimentoId: string) {
@@ -285,18 +308,23 @@ export async function deleteEmbeddings(experimentoId: string) {
 }
 
 export async function searchSimilarExperiments(embedding: number[], limit: number = 10) {
-  // Esta função será implementada quando tivermos a extensão pgvector configurada
+  // Esta função será implementada quando tivermos a função RPC configurada
   // Por enquanto, retornamos uma estrutura vazia
-  const { data, error } = await supabase.rpc('match_experiments', {
-    query_embedding: embedding,
-    match_threshold: 0.8,
-    match_count: limit
-  });
+  try {
+    const { data, error } = await supabase.rpc('match_experiments', {
+      query_embedding: embedding,
+      match_threshold: 0.8,
+      match_count: limit
+    });
 
-  if (error) {
-    console.warn('Função de busca semântica ainda não implementada:', error.message);
+    if (error) {
+      console.warn('Função de busca semântica ainda não implementada:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.warn('Função match_experiments não encontrada. Implementação pendente.');
     return [];
   }
-
-  return data || [];
 }
