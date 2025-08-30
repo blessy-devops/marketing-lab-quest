@@ -282,7 +282,7 @@ export async function createEmbedding(embedding: Omit<ExperimentoEmbedding, 'id'
 
   const { data, error } = await supabase
     .from('experimento_embeddings')
-    .insert([embeddingForStorage])
+    .insert(embeddingForStorage)
     .select()
     .single();
 
@@ -294,7 +294,7 @@ export async function createEmbedding(embedding: Omit<ExperimentoEmbedding, 'id'
     embedding: typeof data.embedding === 'string' 
       ? JSON.parse(data.embedding) 
       : data.embedding
-  };
+  } as ExperimentoEmbedding;
 }
 
 export async function deleteEmbeddings(experimentoId: string) {
@@ -307,7 +307,7 @@ export async function deleteEmbeddings(experimentoId: string) {
 }
 
 export async function searchSimilarExperiments(embedding: number[], limit: number = 10) {
-  const { data, error } = await supabase.rpc('match_experiments', {
+  const { data, error } = await (supabase.rpc as any)('match_experiments', {
     query_embedding: embedding,
     match_threshold: 0.8,
     match_count: limit
