@@ -41,7 +41,9 @@ serve(async (req) => {
     );
 
     // Verificar se o usuário está autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : (authHeader ?? '').trim();
+    console.log('🔐 Auth header presente?', !!authHeader, 'tamanho do token:', token ? token.length : 0);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       console.error('Erro de autenticação:', authError);
       return new Response(
