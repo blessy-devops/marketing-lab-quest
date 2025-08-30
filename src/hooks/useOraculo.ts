@@ -18,12 +18,20 @@ export function useOraculo() {
       return null;
     }
 
+    // Prevenir múltiplas consultas concorrentes
+    if (loading) {
+      toast.error('Aguarde a consulta atual terminar');
+      return null;
+    }
+
     setLoading(true);
     setErro(null);
 
+    let loadingToastId: string | number | undefined;
+
     try {
       // Mostrar toast de loading
-      const toastId = toast.loading('Consultando o Oráculo...');
+      loadingToastId = toast.loading('Consultando o Oráculo...');
 
       // Fazer a chamada
       const resultado = await oraculoService.consultar({
@@ -31,9 +39,6 @@ export function useOraculo() {
         contexto: contexto.trim(),
         tipo
       });
-
-      // Dismiss loading toast
-      toast.dismiss(toastId);
 
       // Verificar resposta
       if (resultado && resultado.resposta) {
@@ -61,15 +66,25 @@ export function useOraculo() {
       console.error('Erro:', error);
       setErro(error.message);
       
+      let errorMessage = 'Tente novamente em alguns segundos';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Tempo esgotado - verifique sua conexão';
+      } else if (error.message === 'Failed to fetch') {
+        errorMessage = 'Erro de conexão - verifique a configuração do webhook';
+      }
+      
       toast.error('Erro ao consultar o Oráculo', {
-        description: 'Tente novamente em alguns segundos'
+        description: errorMessage
       });
       
       return null;
     } finally {
+      if (loadingToastId) {
+        toast.dismiss(loadingToastId);
+      }
       setLoading(false);
     }
-  }, []);
+  }, [loading]);
 
   const limparResposta = useCallback(() => {
     setResposta(null);

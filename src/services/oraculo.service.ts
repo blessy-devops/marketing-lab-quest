@@ -83,23 +83,35 @@ class OraculoService {
   }
 
   async consultar(dados: OraculoRequest): Promise<OraculoResponse> {
+    const webhookUrl = await this.getWebhookUrl();
+    
+    console.log('Chamando Oráculo em:', webhookUrl);
+    const startTime = Date.now();
+    
+    // Criar AbortController para timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos
+
     try {
-      const webhookUrl = await this.getWebhookUrl();
-      
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(dados),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`);
+        throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
       }
 
       const resultado = await response.json();
-      console.log('Resposta do N8N:', resultado);
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`Tempo total (ms): ${totalTime}`);
 
       // Detectar formato da resposta
       let respostaParsed: any;
@@ -113,7 +125,7 @@ class OraculoService {
           metadados = {
             id: n8nData.id,
             tokens_usados: n8nData.tokens_usados,
-            tempo_resposta_ms: n8nData.tempo_resposta_ms,
+            tempo_resposta_ms: n8nData.tempo_resposta_ms || totalTime,
             hit_count: n8nData.hit_count,
             cache: n8nData.hit_count > 0,
           };
@@ -126,6 +138,7 @@ class OraculoService {
         respostaParsed = resultado.resposta || resultado;
         metadados = {
           fontes: resultado.fontes || [],
+          tempo_resposta_ms: totalTime,
         };
       } else {
         throw new Error('Resposta vazia ou formato inválido do servidor');
@@ -150,6 +163,12 @@ class OraculoService {
 
       return oraculoResponse;
     } catch (error) {
+      clearTimeout(timeoutId);
+      
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Tempo esgotado');
+      }
+      
       console.error('Erro ao consultar Oráculo:', error);
       throw error;
     }
