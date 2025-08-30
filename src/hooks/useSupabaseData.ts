@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -308,23 +307,12 @@ export async function deleteEmbeddings(experimentoId: string) {
 }
 
 export async function searchSimilarExperiments(embedding: number[], limit: number = 10) {
-  // Esta função será implementada quando tivermos a função RPC configurada
-  // Por enquanto, retornamos uma estrutura vazia
-  try {
-    const { data, error } = await supabase.rpc('match_experiments', {
-      query_embedding: embedding,
-      match_threshold: 0.8,
-      match_count: limit
-    });
+  const { data, error } = await supabase.rpc('match_experiments', {
+    query_embedding: embedding,
+    match_threshold: 0.8,
+    match_count: limit
+  });
 
-    if (error) {
-      console.warn('Função de busca semântica ainda não implementada:', error.message);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.warn('Função match_experiments não encontrada. Implementação pendente.');
-    return [];
-  }
+  if (error) throw error;
+  return data || [];
 }
