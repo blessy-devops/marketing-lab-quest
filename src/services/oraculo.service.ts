@@ -18,6 +18,16 @@ interface N8nResponse {
   expires_at: string;
 }
 
+interface N8nNewResponse {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  role: string;
+  content: string;
+  sources: any[] | null;
+  created_at: string;
+}
+
 interface OraculoResponse {
   pergunta: string;
   contexto?: string;
@@ -36,9 +46,14 @@ interface OraculoResponse {
     cache?: boolean;
     processado_em?: string;
     id?: string;
+    conversation_id?: string;
+    user_id?: string;
+    role?: string;
     tokens_usados?: number;
     tempo_resposta_ms?: number;
     hit_count?: number;
+    fontes?: any[];
+    created_at?: string;
   };
 }
 
@@ -133,20 +148,38 @@ class OraculoService {
       let metadados: any = {};
 
       if (Array.isArray(resultado) && resultado.length > 0) {
-        // Formato N8N array
         const n8nData = resultado[0];
-        try {
-          respostaParsed = JSON.parse(n8nData.resposta);
+        
+        // Verificar se é o novo formato com 'content' e 'sources'
+        if ('content' in n8nData && 'sources' in n8nData) {
+          // Novo formato N8N
+          respostaParsed = {
+            resposta_completa: n8nData.content
+          };
           metadados = {
             id: n8nData.id,
-            tokens_usados: n8nData.tokens_usados,
-            tempo_resposta_ms: n8nData.tempo_resposta_ms || totalTime,
-            hit_count: n8nData.hit_count,
-            cache: n8nData.hit_count > 0,
+            conversation_id: n8nData.conversation_id,
+            user_id: n8nData.user_id,
+            role: n8nData.role,
+            created_at: n8nData.created_at,
+            fontes: n8nData.sources || [],
+            tempo_resposta_ms: totalTime,
           };
-        } catch (parseError) {
-          console.error('Erro ao fazer parse da resposta:', parseError);
-          throw new Error('Formato de resposta inválido');
+        } else {
+          // Formato N8N antigo
+          try {
+            respostaParsed = JSON.parse(n8nData.resposta);
+            metadados = {
+              id: n8nData.id,
+              tokens_usados: n8nData.tokens_usados,
+              tempo_resposta_ms: n8nData.tempo_resposta_ms || totalTime,
+              hit_count: n8nData.hit_count,
+              cache: n8nData.hit_count > 0,
+            };
+          } catch (parseError) {
+            console.error('Erro ao fazer parse da resposta:', parseError);
+            throw new Error('Formato de resposta inválido');
+          }
         }
       } else if (resultado && typeof resultado === 'object') {
         // Formato objeto direto

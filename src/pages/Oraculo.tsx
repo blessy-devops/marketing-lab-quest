@@ -184,16 +184,66 @@ export default function Oraculo() {
               <h3 className="text-lg font-semibold">Fontes Consultadas</h3>
               <div className="bg-muted/30 rounded-lg p-4">
                 <ul className="space-y-2">
-                  {resposta.metadados.fontes.map((fonte: Fonte) => (
-                    <li key={fonte.id}>
-                      <Link
-                        to={`/experimentos/${fonte.id}`}
-                        className="text-primary hover:underline"
-                      >
-                        • {fonte.nome}
-                      </Link>
-                    </li>
-                  ))}
+                  {resposta.metadados.fontes.map((fonte: any, index: number) => {
+                    // Handle different fonte formats
+                    let id, nome, url;
+                    
+                    if (typeof fonte === 'string') {
+                      // Simple string format
+                      return (
+                        <li key={index}>
+                          <span className="text-muted-foreground">• {fonte}</span>
+                        </li>
+                      );
+                    } else if (fonte && typeof fonte === 'object') {
+                      // Object format - try different property combinations
+                      id = fonte.id || fonte.experimentoId || fonte.experiment_id;
+                      nome = fonte.nome || fonte.name || fonte.title || fonte.filename;
+                      url = fonte.url || fonte.link;
+                      
+                      if (id && nome) {
+                        // Link to experiment
+                        return (
+                          <li key={id || index}>
+                            <Link
+                              to={`/experimentos/${id}`}
+                              className="text-primary hover:underline"
+                            >
+                              • {nome}
+                            </Link>
+                          </li>
+                        );
+                      } else if (url && nome) {
+                        // External link
+                        return (
+                          <li key={index}>
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              • {nome}
+                            </a>
+                          </li>
+                        );
+                      } else if (nome) {
+                        // Just display name
+                        return (
+                          <li key={index}>
+                            <span className="text-muted-foreground">• {nome}</span>
+                          </li>
+                        );
+                      }
+                    }
+                    
+                    // Fallback
+                    return (
+                      <li key={index}>
+                        <span className="text-muted-foreground">• Fonte não identificada</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </div>
