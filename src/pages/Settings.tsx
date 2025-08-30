@@ -17,10 +17,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Edit3 } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -53,18 +49,9 @@ export default function Settings() {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
 
-  // Schema para o formulário do Oráculo
-  const oraculoFormSchema = z.object({
-    oraculoWebhookUrl: z.string().url({ message: "URL inválida" }).min(1, { message: "URL é obrigatória" })
-  });
-
-  // Form para o Oráculo
-  const oraculoForm = useForm<z.infer<typeof oraculoFormSchema>>({
-    resolver: zodResolver(oraculoFormSchema),
-    defaultValues: {
-      oraculoWebhookUrl: ""
-    }
-  });
+  // Estado para o formulário do Oráculo
+  const [oraculoWebhookUrl, setOraculoWebhookUrl] = useState('');
+  const [isSubmittingOraculo, setIsSubmittingOraculo] = useState(false);
 
   const getThemeIcon = () => {
     switch (theme) {
@@ -351,23 +338,53 @@ export default function Settings() {
       }
 
       if (data?.valor) {
-        oraculoForm.reset({
-          oraculoWebhookUrl: data.valor as string
-        });
+        setOraculoWebhookUrl(data.valor as string);
       }
     } catch (error) {
       console.error('Erro inesperado ao carregar configuração:', error);
     }
   };
 
+  // Validação de URL simples
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   // Função para salvar configuração do Oráculo
-  const handleOraculoSubmit = async (data: z.infer<typeof oraculoFormSchema>) => {
+  const handleOraculoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!oraculoWebhookUrl.trim()) {
+      toast({
+        title: "Erro",
+        description: "URL é obrigatória.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isValidUrl(oraculoWebhookUrl)) {
+      toast({
+        title: "Erro",
+        description: "URL inválida.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingOraculo(true);
+    
     try {
       const { error } = await supabase
         .from('configuracoes_app' as any)
         .upsert({
           chave: 'ORACULO_WEBHOOK_URL',
-          valor: data.oraculoWebhookUrl,
+          valor: oraculoWebhookUrl,
           descricao: 'URL do webhook para o serviço Oráculo',
           updated_at: new Date().toISOString()
         }, {
@@ -393,6 +410,8 @@ export default function Settings() {
         description: "Erro inesperado ao salvar configuração.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmittingOraculo(false);
     }
   };
 
@@ -661,46 +680,39 @@ export default function Settings() {
               </div>
             </CardHeader>
             <CardContent>
-              <Form {...oraculoForm}>
-                <form onSubmit={oraculoForm.handleSubmit(handleOraculoSubmit)} className="space-y-4">
-                  <FormField
-                    control={oraculoForm.control}
-                    name="oraculoWebhookUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>URL do Webhook</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="https://exemplo.com/webhook/oraculo"
-                            disabled={userRole !== 'admin'}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        {userRole !== 'admin' && (
-                          <p className="text-xs text-muted-foreground">
-                            Apenas administradores podem alterar esta configuração
-                          </p>
-                        )}
-                      </FormItem>
-                    )}
+              <form onSubmit={handleOraculoSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="webhook-url">URL do Webhook</Label>
+                  <Input
+                    id="webhook-url"
+                    type="url"
+                    value={oraculoWebhookUrl}
+                    onChange={(e) => setOraculoWebhookUrl(e.target.value)}
+                    placeholder="https://exemplo.com/webhook/oraculo"
+                    disabled={userRole !== 'admin'}
+                    required
                   />
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={userRole !== 'admin' || oraculoForm.formState.isSubmitting}
-                  >
-                    {oraculoForm.formState.isSubmitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Salvando...
-                      </>
-                    ) : (
-                      "Salvar Configuração"
-                    )}
-                  </Button>
-                </form>
-              </Form>
+                  {userRole !== 'admin' && (
+                    <p className="text-xs text-muted-foreground">
+                      Apenas administradores podem alterar esta configuração
+                    </p>
+                  )}
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={userRole !== 'admin' || isSubmittingOraculo}
+                >
+                  {isSubmittingOraculo ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Salvando...
+                    </>
+                  ) : (
+                    "Salvar Configuração"
+                  )}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
