@@ -47,7 +47,21 @@ export function useExperimentos() {
       try {
         const { data, error } = await supabase
           .from('experimentos')
-          .select('*')
+          .select(`
+            id,
+            nome,
+            tipo,
+            status,
+            data_inicio,
+            data_fim,
+            responsavel,
+            canais,
+            hipotese,
+            contexto_narrativo,
+            contexto_negocio,
+            created_at,
+            updated_at
+          `)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -100,10 +114,24 @@ export function useExperimentosComResultados() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch experiments first
+        // Fetch experiments with explicit field selection
         const { data: experimentosData, error: expError } = await supabase
           .from('experimentos')
-          .select('*')
+          .select(`
+            id,
+            nome,
+            tipo,
+            status,
+            data_inicio,
+            data_fim,
+            responsavel,
+            canais,
+            hipotese,
+            contexto_narrativo,
+            contexto_negocio,
+            created_at,
+            updated_at
+          `)
           .order('created_at', { ascending: false });
 
         if (expError) throw expError;
