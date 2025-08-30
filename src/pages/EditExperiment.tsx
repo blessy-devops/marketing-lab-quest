@@ -335,15 +335,21 @@ export default function EditExperiment() {
             const existingExpected = existingMetricsMap.get(expectedKey);
             
             if (valorEsperado !== null) {
-              metricasToUpsert.push({
-                id: existingExpected?.id,
+              const metricaData: any = {
                 experimento_id: id,
                 nome: metrica.nome,
                 valor: valorEsperado,
                 unidade: metrica.unidade,
                 tipo: 'esperada'
-              });
-            } else if (existingExpected) {
+              };
+              
+              // Only include id if it exists
+              if (existingExpected?.id) {
+                metricaData.id = existingExpected.id;
+              }
+              
+              metricasToUpsert.push(metricaData);
+            } else if (existingExpected?.id) {
               // Metric was cleared, mark for deletion
               metricIdsToDelete.push(existingExpected.id);
             }
@@ -354,15 +360,21 @@ export default function EditExperiment() {
             const existingRealized = existingMetricsMap.get(realizedKey);
             
             if (valorRealizado !== null) {
-              metricasToUpsert.push({
-                id: existingRealized?.id,
+              const metricaData: any = {
                 experimento_id: id,
                 nome: metrica.nome,
                 valor: valorRealizado,
                 unidade: metrica.unidade,
                 tipo: 'realizada'
-              });
-            } else if (existingRealized) {
+              };
+              
+              // Only include id if it exists
+              if (existingRealized?.id) {
+                metricaData.id = existingRealized.id;
+              }
+              
+              metricasToUpsert.push(metricaData);
+            } else if (existingRealized?.id) {
               // Metric was cleared, mark for deletion
               metricIdsToDelete.push(existingRealized.id);
             }
@@ -373,15 +385,21 @@ export default function EditExperiment() {
             const existingBaseline = existingMetricsMap.get(baselineKey);
             
             if (baseline !== null) {
-              metricasToUpsert.push({
-                id: existingBaseline?.id,
+              const metricaData: any = {
                 experimento_id: id,
                 nome: metrica.nome,
                 valor: baseline,
                 unidade: metrica.unidade,
                 tipo: 'baseline'
-              });
-            } else if (existingBaseline) {
+              };
+              
+              // Only include id if it exists
+              if (existingBaseline?.id) {
+                metricaData.id = existingBaseline.id;
+              }
+              
+              metricasToUpsert.push(metricaData);
+            } else if (existingBaseline?.id) {
               // Metric was cleared, mark for deletion
               metricIdsToDelete.push(existingBaseline.id);
             }
