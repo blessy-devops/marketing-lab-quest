@@ -55,9 +55,11 @@ interface FormData {
 }
 
 // Helper function to convert string to number or null
-const toNumberOrNull = (value: string | undefined): number | null => {
-  if (!value || value.trim() === "") return null;
-  const num = parseFloat(value);
+const toNumberOrNull = (value: string | number | undefined): number | null => {
+  if (value === undefined || value === null || value === "") return null;
+  const stringValue = typeof value === 'string' ? value.trim() : value.toString();
+  if (stringValue === "") return null;
+  const num = parseFloat(stringValue);
   return isNaN(num) ? null : num;
 };
 
@@ -304,69 +306,123 @@ export default function EditExperiment() {
 
       if (experimentoError) throw experimentoError;
 
-      // Deletar métricas existentes
-      await supabase
-        .from('metricas')
-        .delete()
-        .eq('experimento_id', id);
-
-      // Inserir novas métricas
+      // Handle metrics with upsert logic
       if (data.metricas.length > 0) {
-        const metricasData: Array<{
+        // Create a map of existing metrics by nome+tipo for quick lookup
+        const existingMetricsMap = new Map<string, any>();
+        metricas.forEach(metrica => {
+          const key = `${metrica.nome}-${metrica.tipo}`;
+          existingMetricsMap.set(key, metrica);
+        });
+
+        const metricasToUpsert: Array<{
+          id?: string;
           experimento_id: string | undefined;
           nome: string;
           valor: number;
           unidade?: string;
           tipo: string;
         }> = [];
+        const metricIdsToDelete: string[] = [];
 
+        // Process each metric from the form
         data.metricas
           .filter(m => m.nome.trim())
           .forEach(metrica => {
-            // Adicionar métrica esperada
+            // Handle expected value metric
             const valorEsperado = toNumberOrNull(metrica.valorEsperado);
+            const expectedKey = `${metrica.nome}-esperada`;
+            const existingExpected = existingMetricsMap.get(expectedKey);
+            
             if (valorEsperado !== null) {
-              metricasData.push({
+              metricasToUpsert.push({
+                id: existingExpected?.id,
                 experimento_id: id,
                 nome: metrica.nome,
                 valor: valorEsperado,
                 unidade: metrica.unidade,
                 tipo: 'esperada'
               });
+            } else if (existingExpected) {
+              // Metric was cleared, mark for deletion
+              metricIdsToDelete.push(existingExpected.id);
             }
 
-            // Adicionar métrica realizada
+            // Handle realized value metric
             const valorRealizado = toNumberOrNull(metrica.valorRealizado);
+            const realizedKey = `${metrica.nome}-realizada`;
+            const existingRealized = existingMetricsMap.get(realizedKey);
+            
             if (valorRealizado !== null) {
-              metricasData.push({
+              metricasToUpsert.push({
+                id: existingRealized?.id,
                 experimento_id: id,
                 nome: metrica.nome,
                 valor: valorRealizado,
                 unidade: metrica.unidade,
                 tipo: 'realizada'
               });
+            } else if (existingRealized) {
+              // Metric was cleared, mark for deletion
+              metricIdsToDelete.push(existingRealized.id);
             }
 
-            // Adicionar baseline
+            // Handle baseline metric
             const baseline = toNumberOrNull(metrica.baseline);
+            const baselineKey = `${metrica.nome}-baseline`;
+            const existingBaseline = existingMetricsMap.get(baselineKey);
+            
             if (baseline !== null) {
-              metricasData.push({
+              metricasToUpsert.push({
+                id: existingBaseline?.id,
                 experimento_id: id,
                 nome: metrica.nome,
                 valor: baseline,
                 unidade: metrica.unidade,
                 tipo: 'baseline'
               });
+            } else if (existingBaseline) {
+              // Metric was cleared, mark for deletion
+              metricIdsToDelete.push(existingBaseline.id);
             }
           });
 
-        if (metricasData.length > 0) {
-          const { error: metricasError } = await supabase
-            .from('metricas')
-            .insert(metricasData);
+        // Check for metrics that were completely removed (no longer in form)
+        const currentMetricNames = new Set(
+          data.metricas.filter(m => m.nome.trim()).map(m => m.nome)
+        );
+        metricas.forEach(metrica => {
+          if (!currentMetricNames.has(metrica.nome)) {
+            metricIdsToDelete.push(metrica.id);
+          }
+        });
 
-          if (metricasError) throw metricasError;
+        // Perform upsert operation
+        if (metricasToUpsert.length > 0) {
+          const { error: upsertError } = await supabase
+            .from('metricas')
+            .upsert(metricasToUpsert, { onConflict: 'id' });
+
+          if (upsertError) throw upsertError;
         }
+
+        // Delete metrics that were cleared or removed
+        if (metricIdsToDelete.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('metricas')
+            .delete()
+            .in('id', metricIdsToDelete);
+
+          if (deleteError) throw deleteError;
+        }
+      } else {
+        // If no metrics in form, delete all existing metrics for this experiment
+        const { error: deleteAllError } = await supabase
+          .from('metricas')
+          .delete()
+          .eq('experimento_id', id);
+
+        if (deleteAllError) throw deleteAllError;
       }
 
       toast.success('Experimento atualizado com sucesso!');
