@@ -90,12 +90,39 @@ serve(async (req) => {
       );
     }
 
-    // Obter URL do webhook n8n
-    const webhookUrl = Deno.env.get('N8N_ORACLE_WEBHOOK_URL');
+    // Obter URL do webhook n8n da configuração do app
+    let webhookUrl: string | null = null;
+    
+    try {
+      const { data: cfg, error: cfgErr } = await supabase
+        .from('configuracoes_app')
+        .select('valor')
+        .eq('chave', 'ORACULO_WEBHOOK_URL')
+        .maybeSingle();
+
+      if (cfgErr) {
+        console.error('Erro ao buscar configuração do webhook:', cfgErr);
+      } else if (cfg?.valor) {
+        const raw = cfg.valor;
+        webhookUrl = typeof raw === 'string' ? raw : (raw?.url ?? null);
+        console.log('✅ Usando URL do webhook do banco de dados');
+      }
+    } catch (error) {
+      console.error('Erro na consulta de configuração:', error);
+    }
+
+    // Fallback para variável de ambiente se não encontrou no banco
     if (!webhookUrl) {
-      console.error('N8N_ORACLE_WEBHOOK_URL não configurada');
+      webhookUrl = Deno.env.get('N8N_ORACLE_WEBHOOK_URL');
+      if (webhookUrl) {
+        console.log('⚠️ Usando URL do webhook da variável de ambiente (fallback)');
+      }
+    }
+
+    if (!webhookUrl) {
+      console.error('URL do webhook não configurada (nem no banco nem no env)');
       return new Response(
-        JSON.stringify({ error: 'Webhook URL not configured' }),
+        JSON.stringify({ error: 'Webhook URL not configured (DB and env)' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
