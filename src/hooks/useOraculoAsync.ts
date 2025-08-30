@@ -61,13 +61,23 @@ export function useOraculoAsync() {
         userId 
       });
 
-      // Chamar a Edge Function
+      // Obter sessão atual para autenticação
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session.session?.access_token) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
+      // Chamar a Edge Function com autenticação explícita
       const startTime = performance.now();
       const { data, error } = await supabase.functions.invoke('oraculo-trigger', {
         body: {
           question: pergunta,
           conversationId,
           userId,
+        },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
         },
       });
       const endTime = performance.now();
