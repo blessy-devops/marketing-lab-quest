@@ -169,7 +169,7 @@ export default function Oraculo() {
         <div className="space-y-6">
           {/* Resposta da IA */}
           <div className="bg-background border rounded-lg p-6">
-            <div className="prose prose-gray max-w-none">
+            <div className="prose dark:prose-invert max-w-none">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {resposta.resposta?.resposta_completa || 
                  resposta.resposta?.resumo || 
