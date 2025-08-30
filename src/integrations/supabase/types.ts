@@ -349,6 +349,8 @@ export type Database = {
         Row: {
           base_conhecimento: boolean | null
           canais: string[] | null
+          contexto_narrativo: string | null
+          contexto_negocio: Json | null
           created_at: string
           data_fim: string | null
           data_inicio: string | null
@@ -368,6 +370,8 @@ export type Database = {
         Insert: {
           base_conhecimento?: boolean | null
           canais?: string[] | null
+          contexto_narrativo?: string | null
+          contexto_negocio?: Json | null
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
@@ -387,6 +391,8 @@ export type Database = {
         Update: {
           base_conhecimento?: boolean | null
           canais?: string[] | null
+          contexto_narrativo?: string | null
+          contexto_negocio?: Json | null
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
