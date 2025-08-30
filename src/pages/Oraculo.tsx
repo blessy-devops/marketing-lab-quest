@@ -3,6 +3,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { Brain, Loader2, Sparkles, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link } from "react-router-dom";
@@ -26,7 +27,7 @@ export default function Oraculo() {
     console.log('🔄 Configurando Realtime para conversation:', conversationId);
 
     const channel = supabase
-      .channel('oraculo-updates')
+      .channel(`conversation-${conversationId}-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -192,9 +193,15 @@ export default function Oraculo() {
               ) : (
                 <>
                   {message.status === 'loading' ? (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>O Oráculo está analisando sua pergunta...</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>O Oráculo está analisando sua pergunta...</span>
+                      </div>
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                      <Skeleton className="h-4 w-4/5" />
+                      <Skeleton className="h-4 w-3/4" />
                     </div>
                   ) : (
                     <div className="space-y-4">

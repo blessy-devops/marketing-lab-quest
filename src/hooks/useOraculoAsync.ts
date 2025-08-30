@@ -55,9 +55,14 @@ export function useOraculoAsync() {
 
       setMessages(prev => [...prev, userMessage, assistantPlaceholder]);
 
-      console.log('🚀 Enviando pergunta para Edge Function:', { pergunta, conversationId, userId });
+      console.log('🚀 Enviando pergunta para Edge Function:', { 
+        pergunta: pergunta.substring(0, 50) + '...', 
+        conversationId, 
+        userId 
+      });
 
       // Chamar a Edge Function
+      const startTime = performance.now();
       const { data, error } = await supabase.functions.invoke('oraculo-trigger', {
         body: {
           question: pergunta,
@@ -65,16 +70,21 @@ export function useOraculoAsync() {
           userId,
         },
       });
+      const endTime = performance.now();
+
+      console.log(`⚡ Edge Function respondeu em ${Math.round(endTime - startTime)}ms`);
 
       if (error) {
+        console.error('❌ Erro na Edge Function:', error);
         throw new Error(`Erro na Edge Function: ${error.message}`);
       }
 
       if (!data?.success) {
+        console.error('❌ Edge Function não retornou sucesso:', data);
         throw new Error('Edge Function não retornou sucesso');
       }
 
-      console.log('✅ Edge Function chamada com sucesso');
+      console.log('✅ Edge Function chamada com sucesso - aguardando resposta via Realtime');
       toast.success('Pergunta enviada! Aguarde a resposta...', {
         description: 'O Oráculo está processando sua consulta'
       });
@@ -99,6 +109,11 @@ export function useOraculoAsync() {
   }, [loading]);
 
   const atualizarMensagemAssistente = useCallback((novoContent: string, sources?: any[]) => {
+    console.log('🔄 Atualizando mensagem do assistente:', { 
+      contentLength: novoContent?.length || 0,
+      sourcesCount: sources?.length || 0 
+    });
+    
     setMessages(prev => prev.map(msg => {
       if (msg.role === 'assistant' && msg.status === 'loading') {
         return {
