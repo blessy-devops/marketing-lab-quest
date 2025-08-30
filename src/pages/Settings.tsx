@@ -1,4 +1,4 @@
-import { ArrowLeft, Moon, Sun, Monitor, Bell, Shield, User, Settings as SettingsIcon, Users, Camera, Send, Copy, Check } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Monitor, Bell, Shield, User, Settings as SettingsIcon, Users, Camera, Send, Copy, Check, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -17,6 +17,10 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Edit3 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -48,6 +52,19 @@ export default function Settings() {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+
+  // Schema para o formulário do Oráculo
+  const oraculoFormSchema = z.object({
+    oraculoWebhookUrl: z.string().url({ message: "URL inválida" }).min(1, { message: "URL é obrigatória" })
+  });
+
+  // Form para o Oráculo
+  const oraculoForm = useForm<z.infer<typeof oraculoFormSchema>>({
+    resolver: zodResolver(oraculoFormSchema),
+    defaultValues: {
+      oraculoWebhookUrl: ""
+    }
+  });
 
   const getThemeIcon = () => {
     switch (theme) {
@@ -195,17 +212,20 @@ export default function Settings() {
     
     setIsLoadingUsers(true);
     try {
-      const { data: usersData, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          user_roles(role)
-        `)
-        .eq('ativo', true)
-        .order('nome_completo');
+      // Buscar perfis e roles separadamente
+      const [profilesResponse, rolesResponse] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('ativo', true)
+          .order('nome_completo'),
+        supabase
+          .from('user_roles')
+          .select('*')
+      ]);
 
-      if (error) {
-        console.error('Erro ao carregar usuários:', error);
+      if (profilesResponse.error) {
+        console.error('Erro ao carregar perfis:', profilesResponse.error);
         toast({
           title: "Erro",
           description: "Não foi possível carregar os usuários.",
@@ -214,8 +234,27 @@ export default function Settings() {
         return;
       }
 
-      console.log('Usuários carregados:', usersData);
-      setUsers(usersData || []);
+      if (rolesResponse.error) {
+        console.error('Erro ao carregar roles:', rolesResponse.error);
+        toast({
+          title: "Erro", 
+          description: "Não foi possível carregar as permissões dos usuários.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Combinar dados em memória
+      const combinedUsers = (profilesResponse.data || []).map(profile => {
+        const userRole = rolesResponse.data?.find(role => role.user_id === profile.user_id);
+        return {
+          ...profile,
+          user_roles: userRole || { role: 'viewer' }
+        };
+      });
+
+      console.log('Usuários carregados:', combinedUsers);
+      setUsers(combinedUsers);
     } catch (error) {
       toast({
         title: "Erro",
@@ -297,12 +336,77 @@ export default function Settings() {
     }
   };
 
+  // Função para carregar configuração do Oráculo
+  const loadOraculoConfig = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('configuracoes_app' as any)
+        .select('valor')
+        .eq('chave', 'ORACULO_WEBHOOK_URL')
+        .maybeSingle() as any;
+
+      if (error) {
+        console.error('Erro ao carregar configuração do Oráculo:', error);
+        return;
+      }
+
+      if (data?.valor) {
+        oraculoForm.reset({
+          oraculoWebhookUrl: data.valor as string
+        });
+      }
+    } catch (error) {
+      console.error('Erro inesperado ao carregar configuração:', error);
+    }
+  };
+
+  // Função para salvar configuração do Oráculo
+  const handleOraculoSubmit = async (data: z.infer<typeof oraculoFormSchema>) => {
+    try {
+      const { error } = await supabase
+        .from('configuracoes_app' as any)
+        .upsert({
+          chave: 'ORACULO_WEBHOOK_URL',
+          valor: data.oraculoWebhookUrl,
+          descricao: 'URL do webhook para o serviço Oráculo',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'chave'
+        });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível salvar a configuração do Oráculo.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Configuração do Oráculo salva com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao salvar configuração.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Carregar usuários quando for admin
   useEffect(() => {
     if (userRole === 'admin') {
       loadUsers();
     }
   }, [userRole]);
+
+  // Carregar configuração do Oráculo ao montar o componente
+  useEffect(() => {
+    loadOraculoConfig();
+  }, []);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -325,7 +429,7 @@ export default function Settings() {
 
       {/* Sistema de Abas */}
       <Tabs defaultValue="perfil" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="perfil" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Meu Perfil
@@ -333,6 +437,10 @@ export default function Settings() {
           <TabsTrigger value="preferencias" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
             Preferências
+          </TabsTrigger>
+          <TabsTrigger value="oraculo" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Oráculo
           </TabsTrigger>
           <TabsTrigger value="usuarios" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -532,6 +640,67 @@ export default function Settings() {
                 </div>
                 <Switch />
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Aba Oráculo */}
+        <TabsContent value="oraculo" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Brain className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Configuração do Oráculo</CardTitle>
+                  <CardDescription>
+                    Configure a URL do webhook para o serviço Oráculo
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Form {...oraculoForm}>
+                <form onSubmit={oraculoForm.handleSubmit(handleOraculoSubmit)} className="space-y-4">
+                  <FormField
+                    control={oraculoForm.control}
+                    name="oraculoWebhookUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL do Webhook</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="https://exemplo.com/webhook/oraculo"
+                            disabled={userRole !== 'admin'}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        {userRole !== 'admin' && (
+                          <p className="text-xs text-muted-foreground">
+                            Apenas administradores podem alterar esta configuração
+                          </p>
+                        )}
+                      </FormItem>
+                    )}
+                  />
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={userRole !== 'admin' || oraculoForm.formState.isSubmitting}
+                  >
+                    {oraculoForm.formState.isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Salvando...
+                      </>
+                    ) : (
+                      "Salvar Configuração"
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </TabsContent>
