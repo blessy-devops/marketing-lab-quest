@@ -1,5 +1,5 @@
 import { useForm, useFieldArray } from "react-hook-form";
-import { ArrowLeft, Save, Plus, X, CalendarIcon, Star, Brain, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, CalendarIcon, Star, Brain, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, CalendarClock } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -203,6 +203,10 @@ export default function NewExperiment() {
   const canaisSelecionados = form.watch('canais');
   const status = form.watch('status');
   const tags = form.watch('tags') || [];
+  const dataInicio = form.watch('data_inicio');
+
+  // Verificar se a data de início é no futuro
+  const isStartInFuture = dataInicio ? new Date(dataInicio) > new Date() : false;
 
   // Sugestões de tags
   const tagSuggestions = [
@@ -1153,152 +1157,162 @@ export default function NewExperiment() {
 
           {/* Step 4: Results (only for realized experiments) */}
           {currentStep === 4 && tipoCadastro === 'realizado' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Resultados do Experimento</CardTitle>
-                <CardDescription>
-                  Informe os resultados e aprendizados obtidos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="rating"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Avaliação (1 a 5 estrelas) *</FormLabel>
-                      <FormControl>
-                        <div className="flex items-center gap-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => field.onChange(star)}
-                              aria-label={`${star} estrela${star > 1 ? 's' : ''}`}
-                              className="p-1"
-                            >
-                              <Star
-                                className={cn(
-                                  "h-6 w-6",
-                                  (field.value || 0) >= star ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-                                )}
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid gap-4 md:grid-cols-2">
+            isStartInFuture ? (
+              <Card className="p-6 flex flex-col items-center justify-center text-center bg-muted/40 border-dashed">
+                <CalendarClock className="h-8 w-8 mb-4 text-muted-foreground" />
+                <h4 className="font-semibold text-lg">Resultados ainda não disponíveis</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Você poderá documentar os resultados assim que a data de início do experimento for alcançada.
+                </p>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Resultados do Experimento</CardTitle>
+                  <CardDescription>
+                    Informe os resultados e aprendizados obtidos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="fatos"
+                    name="rating"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Fatos</FormLabel>
+                        <FormLabel>Avaliação (1 a 5 estrelas) *</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder="O que aconteceu de fato..."
-                            rows={3}
-                            {...field}
-                          />
+                          <div className="flex items-center gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => field.onChange(star)}
+                                aria-label={`${star} estrela${star > 1 ? 's' : ''}`}
+                                className="p-1"
+                              >
+                                <Star
+                                  className={cn(
+                                    "h-6 w-6",
+                                    (field.value || 0) >= star ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                                  )}
+                                />
+                              </button>
+                            ))}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="causas"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Causas</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Por que aconteceu..."
-                            rows={3}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="fatos"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fatos</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="O que aconteceu de fato..."
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="acoes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ações</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="O que deve ser feito..."
-                            rows={3}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="causas"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Causas</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Por que aconteceu..."
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="aprendizados"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Aprendizados</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Ex: INSIGHT PRINCIPAL: Clientes reagem melhor a descontos progressivos. | APLICÁVEL QUANDO: Em campanhas de reativação com carrinhos abandonados."
-                            rows={3}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                 </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="acoes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ações</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="O que deve ser feito..."
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                 <div className="space-y-4 pt-4 border-t">
-                   <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
-                     Status do Experimento
-                   </h4>
-                   
-                   <FormField
-                     control={form.control}
-                     name="sucesso"
-                     render={({ field }) => (
-                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-lg">
-                         <FormControl>
-                           <Checkbox
-                             checked={field.value}
-                             onCheckedChange={field.onChange}
-                           />
-                         </FormControl>
-                         <div className="space-y-1 leading-none">
-                           <FormLabel className="flex items-center gap-2">
-                             🏆 Experimento bem-sucedido
-                           </FormLabel>
-                           <FormDescription className="text-xs">
-                             Marque se o experimento atingiu os objetivos esperados. Será destacado com troféu na galeria.
-                           </FormDescription>
-                         </div>
-                       </FormItem>
-                     )}
-                   />
-                 </div>
-               </CardContent>
-             </Card>
-           )}
+                    <FormField
+                      control={form.control}
+                      name="aprendizados"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Aprendizados</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Ex: INSIGHT PRINCIPAL: Clientes reagem melhor a descontos progressivos. | APLICÁVEL QUANDO: Em campanhas de reativação com carrinhos abandonados."
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                   </div>
+
+                   <div className="space-y-4 pt-4 border-t">
+                     <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground">
+                       Status do Experimento
+                     </h4>
+                     
+                     <FormField
+                       control={form.control}
+                       name="sucesso"
+                       render={({ field }) => (
+                         <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-lg">
+                           <FormControl>
+                             <Checkbox
+                               checked={field.value}
+                               onCheckedChange={field.onChange}
+                             />
+                           </FormControl>
+                           <div className="space-y-1 leading-none">
+                             <FormLabel className="flex items-center gap-2">
+                               🏆 Experimento bem-sucedido
+                             </FormLabel>
+                             <FormDescription className="text-xs">
+                               Marque se o experimento atingiu os objetivos esperados. Será destacado com troféu na galeria.
+                             </FormDescription>
+                           </div>
+                         </FormItem>
+                       )}
+                     />
+                   </div>
+                 </CardContent>
+               </Card>
+            )
+          )}
 
           {/* Step 5: Attachments */}
           {currentStep === 5 && (
