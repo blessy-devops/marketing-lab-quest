@@ -10,9 +10,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface Conversation {
-  conversation_id: string;
+  id: string;
   title: string;
-  last_updated: string;
+  updated_at: string;
 }
 
 interface ChatHistorySidebarProps {
@@ -43,7 +43,10 @@ export function ChatHistorySidebar({
         }, 15000);
       });
 
-      const dataPromise = supabase.rpc('get_user_conversations');
+      const dataPromise = supabase
+        .from('conversations')
+        .select('*')
+        .order('updated_at', { ascending: false });
       
       const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any;
       
@@ -52,7 +55,6 @@ export function ChatHistorySidebar({
         return;
       }
 
-      // A RPC agora retorna o formato correto: { conversation_id, title, last_updated }
       setConversations(data || []);
     } catch (error: any) {
       console.error('Erro ao carregar conversas:', error);
@@ -69,6 +71,45 @@ export function ChatHistorySidebar({
   useEffect(() => {
     loadConversations();
   }, []);
+
+  // Realtime subscription for conversation updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('conversation-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations',
+        },
+        (payload) => {
+          const updatedConversation = payload.new as Conversation;
+          setConversations(prev => 
+            prev.map(c => 
+              c.id === updatedConversation.id ? updatedConversation : c
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Optimistic UI for new conversations
+  useEffect(() => {
+    if (activeConversationId && !conversations.find(c => c.id === activeConversationId)) {
+      const optimisticConversation: Conversation = {
+        id: activeConversationId,
+        title: 'Nova Conversa',
+        updated_at: new Date().toISOString()
+      };
+      setConversations(prev => [optimisticConversation, ...prev]);
+    }
+  }, [activeConversationId, conversations]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -155,12 +196,12 @@ export function ChatHistorySidebar({
           ) : (
             conversations.map((conversation) => (
               <button
-                key={conversation.conversation_id}
-                onClick={() => handleSelectConversation(conversation.conversation_id)}
+                key={conversation.id}
+                onClick={() => handleSelectConversation(conversation.id)}
                 className={cn(
                   "w-full p-3 text-left rounded-lg transition-colors hover:bg-muted/50",
                   "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  activeConversationId === conversation.conversation_id && "bg-muted border-l-2 border-primary"
+                  activeConversationId === conversation.id && "bg-muted border-l-2 border-primary"
                 )}
               >
                 <div className="space-y-1">
@@ -168,7 +209,7 @@ export function ChatHistorySidebar({
                     {truncateMessage(conversation.title)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDate(conversation.last_updated)}
+                    {formatDate(conversation.updated_at)}
                   </p>
                 </div>
               </button>
