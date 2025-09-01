@@ -162,9 +162,9 @@ export function ChatHistorySidebar({
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b bg-card">
+      <div className="p-4 border-b bg-card flex-shrink-0">
         <div className="flex items-center gap-2 mb-4">
           <Brain className="w-5 h-5 text-primary" />
           <h2 className="font-semibold">Conversas</h2>
@@ -182,45 +182,47 @@ export function ChatHistorySidebar({
       </div>
 
       {/* Conversations List */}
-      <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
-          {loading ? (
-            // Loading skeletons
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="p-3 space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            ))
-          ) : conversations.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Nenhuma conversa ainda</p>
-            </div>
-          ) : (
-            conversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                onClick={() => handleSelectConversation(conversation.id)}
-                className={cn(
-                  "w-full p-3 text-left rounded-lg transition-colors hover:bg-muted/50",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  activeConversationId === conversation.id && "bg-muted border-l-2 border-primary"
-                )}
-              >
-                <div className="space-y-1">
-                  <p className="text-sm font-medium line-clamp-2">
-                    {truncateMessage(conversation.title)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(conversation.updated_at)}
-                  </p>
+      <div className="flex-1 min-h-0">
+        <ScrollArea className="h-full">
+          <div className="p-2 space-y-1">
+            {loading ? (
+              // Loading skeletons
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-3 space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-1/2" />
                 </div>
-              </button>
-            ))
-          )}
-        </div>
-      </ScrollArea>
+              ))
+            ) : conversations.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground">
+                <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nenhuma conversa ainda</p>
+              </div>
+            ) : (
+              conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  onClick={() => handleSelectConversation(conversation.id)}
+                  className={cn(
+                    "w-full p-3 text-left rounded-lg transition-colors hover:bg-muted/50",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    activeConversationId === conversation.id && "bg-muted border-l-2 border-primary"
+                  )}
+                >
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium line-clamp-2">
+                      {truncateMessage(conversation.title)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(conversation.updated_at)}
+                    </p>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
 

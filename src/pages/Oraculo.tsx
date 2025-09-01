@@ -285,10 +285,10 @@ export default function Oraculo() {
 
   // Layout com sidebar para desktop e drawer para mobile
   return (
-    <div className="flex h-screen">
+    <div className="container mx-auto p-4 md:p-6 pb-20 md:pb-6 h-full flex">
       {/* Fixed Sidebar - Desktop only */}
       {!isMobile && (
-        <div className="w-80 h-screen overflow-y-auto flex-shrink-0 border-r">
+        <div className="w-80 h-full flex-shrink-0 border-r mr-6">
           <ChatHistorySidebar
             activeConversationId={conversationId || undefined}
             onSelectConversation={handleSelectConversation}
@@ -298,7 +298,7 @@ export default function Oraculo() {
       )}
 
       {/* Main Content - Flexible and scrollable */}
-      <div className="flex-1 flex flex-col overflow-hidden h-screen">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Mobile Header with Menu */}
         {isMobile && (
           <div className="flex items-center justify-between p-4 border-b md:hidden">
@@ -326,7 +326,7 @@ export default function Oraculo() {
 
         {/* Layout centralizado para primeira consulta */}
         {messages.length === 0 ? (
-          <div className="flex-1 flex justify-center items-center">
+          <div className="flex-1 flex justify-center items-center min-h-0">
             <div className="max-w-2xl w-full space-y-6 p-6">
               <div className="text-center space-y-4">
                 <div className="flex justify-center">
@@ -384,7 +384,7 @@ export default function Oraculo() {
           </div>
         ) : (
           // Layout de chat após primeira consulta
-          <div className="flex-1 flex flex-col space-y-6 p-4 md:p-6">
+          <div className="flex-1 flex flex-col space-y-6 min-h-0">
             {/* Desktop Header */}
             {!isMobile && (
               <div className="flex items-center justify-between">
@@ -423,7 +423,7 @@ export default function Oraculo() {
             )}
 
             {/* Área de mensagens */}
-            <div className="flex-1 space-y-6 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-6">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] ${
