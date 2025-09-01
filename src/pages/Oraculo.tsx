@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef, FormEvent } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Brain, Loader2, Sparkles, Send, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -174,7 +175,8 @@ function AssistantSourcesBadges({ sources }: AssistantSourcesBadgesProps) {
 
 export default function Oraculo() {
   const [pergunta, setPergunta] = useState("");
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const { conversationId } = useParams<{ conversationId: string }>();
+  const navigate = useNavigate();
   const { 
     enviarPergunta, 
     atualizarMensagemAssistente, 
@@ -189,6 +191,15 @@ export default function Oraculo() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load conversation history when conversationId changes
+  useEffect(() => {
+    if (conversationId) {
+      carregarHistorico(conversationId);
+    } else {
+      limparMensagens();
+    }
+  }, [conversationId, carregarHistorico, limparMensagens]);
 
   // Configurar subscrição Realtime
   useEffect(() => {
@@ -249,42 +260,45 @@ export default function Oraculo() {
     }
 
     // Gerar conversationId se não existir
-    let currentConversationId = conversationId;
-    if (!currentConversationId) {
-      currentConversationId = uuidv4();
-      setConversationId(currentConversationId);
+    if (!conversationId) {
+      const newConversationId = uuidv4();
+      navigate(`/oraculo/${newConversationId}`, { replace: true });
+      return;
     }
     
-    const sucesso = await enviarPergunta(pergunta, currentConversationId, user.id);
+    const sucesso = await enviarPergunta(pergunta, conversationId, user.id);
     if (sucesso) {
       setPergunta(""); // Limpar input apenas se enviou com sucesso
     }
   };
 
   const handleSelectConversation = async (selectedConversationId: string) => {
-    setConversationId(selectedConversationId);
+    navigate(`/oraculo/${selectedConversationId}`);
     setPergunta("");
-    await carregarHistorico(selectedConversationId);
   };
 
   const handleNewConversation = () => {
-    setConversationId(null);
+    const newConversationId = uuidv4();
+    navigate(`/oraculo/${newConversationId}`);
     setPergunta("");
-    limparMensagens();
   };
 
   // Layout com sidebar para desktop e drawer para mobile
   return (
-    <div className="flex h-full">
-      {/* Sidebar */}
-      <ChatHistorySidebar
-        activeConversationId={conversationId || undefined}
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
-      />
+    <div className="flex h-screen">
+      {/* Fixed Sidebar - Desktop only */}
+      {!isMobile && (
+        <div className="w-80 h-screen overflow-y-auto flex-shrink-0 border-r">
+          <ChatHistorySidebar
+            activeConversationId={conversationId || undefined}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+          />
+        </div>
+      )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Content - Flexible and scrollable */}
+      <div className="flex-1 flex flex-col overflow-hidden h-screen">
         {/* Mobile Header with Menu */}
         {isMobile && (
           <div className="flex items-center justify-between p-4 border-b md:hidden">
@@ -409,7 +423,7 @@ export default function Oraculo() {
             )}
 
             {/* Área de mensagens */}
-            <div className="flex-1 space-y-6 overflow-auto">
+            <div className="flex-1 space-y-6 overflow-y-auto">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] ${
