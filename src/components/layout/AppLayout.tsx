@@ -41,7 +41,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             <MobileHeader />
             
             <main className="flex-1 min-h-0">
-              {children}
+              <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6">
+                {children}
+              </div>
             </main>
             
             {/* Mobile Bottom Navigation */}
