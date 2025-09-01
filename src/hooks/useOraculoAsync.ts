@@ -158,7 +158,6 @@ export function useOraculoAsync() {
         .select('*')
         .eq('conversation_id', conversationId)
         .eq('role', 'assistant')
-        .neq('role', 'system')
         .order('created_at', { ascending: false })
         .limit(1);
 

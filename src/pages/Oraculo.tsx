@@ -1,5 +1,5 @@
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import { Brain, Loader2, Sparkles, Send, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,7 @@ export default function Oraculo() {
   } = useOraculoAsync();
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Configurar subscrição Realtime
   useEffect(() => {
@@ -74,6 +75,13 @@ export default function Oraculo() {
       supabase.removeChannel(channel);
     };
   }, [conversationId, user?.id, atualizarMensagemAssistente]);
+
+  // Auto-scroll para o final quando novas mensagens chegam (apenas quando ordem é 'oldest')
+  useEffect(() => {
+    if (messageOrder === 'oldest' && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, messageOrder]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -345,6 +353,8 @@ export default function Oraculo() {
                   </div>
                 </div>
               ))}
+              {/* Elemento invisível para auto-scroll */}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input para nova pergunta */}
