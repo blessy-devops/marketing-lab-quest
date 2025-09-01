@@ -4,6 +4,7 @@ import { Brain, Loader2, Sparkles, Send, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link } from "react-router-dom";
@@ -15,6 +16,161 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChatHistorySidebar } from "@/components/ChatHistorySidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+// Subcomponente para renderizar badges das fontes
+interface AssistantSourcesBadgesProps {
+  sources: any[];
+}
+
+function AssistantSourcesBadges({ sources }: AssistantSourcesBadgesProps) {
+  const [experimentosFonte, setExperimentosFonte] = useState<{id: string, nome: string}[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!sources || sources.length === 0) {
+      setExperimentosFonte([]);
+      return;
+    }
+
+    const fetchExperimentData = async () => {
+      setIsLoading(true);
+      try {
+        // Extrair apenas UUIDs das fontes (filtrar strings que parecem UUIDs)
+        const uuids = sources.filter(fonte => {
+          if (typeof fonte === 'string') {
+            // Verificar se é um UUID válido
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(fonte);
+          } else if (fonte && typeof fonte === 'object') {
+            const id = fonte.id || fonte.experimentoId || fonte.experiment_id;
+            return id && typeof id === 'string';
+          }
+          return false;
+        });
+
+        if (uuids.length === 0) {
+          setExperimentosFonte([]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Extrair IDs das fontes
+        const ids = uuids.map(fonte => {
+          if (typeof fonte === 'string') return fonte;
+          return fonte.id || fonte.experimentoId || fonte.experiment_id;
+        });
+
+        const { data, error } = await supabase
+          .from('experimentos')
+          .select('id, nome')
+          .in('id', ids);
+
+        if (error) {
+          console.error('Erro ao buscar experimentos:', error);
+          setExperimentosFonte([]);
+        } else {
+          setExperimentosFonte(data || []);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados dos experimentos:', error);
+        setExperimentosFonte([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchExperimentData();
+  }, [sources]);
+
+  // Se não há fontes, não renderizar nada
+  if (!sources || sources.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">Fontes Consultadas</h3>
+      <div className="bg-muted/30 rounded-lg p-4">
+        {isLoading ? (
+          // Renderizar skeleton loaders
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-6 w-32 rounded-full" />
+            <Skeleton className="h-6 w-28 rounded-full" />
+            <Skeleton className="h-6 w-36 rounded-full" />
+          </div>
+        ) : (
+          // Renderizar badges clicáveis
+          <div className="flex flex-wrap gap-2">
+            {experimentosFonte.map((experimento) => (
+              <Link
+                key={experimento.id}
+                to={`/experimentos/${experimento.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Badge 
+                  variant="outline"
+                  className="hover:bg-primary/20 cursor-pointer transition-colors"
+                >
+                  {experimento.nome}
+                </Badge>
+              </Link>
+            ))}
+            {/* Renderizar fontes não-experimentais (URLs, etc.) */}
+            {sources.filter(fonte => {
+              if (typeof fonte === 'string') {
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                return !uuidRegex.test(fonte);
+              } else if (fonte && typeof fonte === 'object') {
+                const id = fonte.id || fonte.experimentoId || fonte.experiment_id;
+                const url = fonte.url || fonte.link;
+                const nome = fonte.nome || fonte.name || fonte.title || fonte.filename;
+                return !id && (url || nome);
+              }
+              return false;
+            }).map((fonte, index) => {
+              if (typeof fonte === 'string') {
+                return (
+                  <Badge key={index} variant="secondary">
+                    {fonte}
+                  </Badge>
+                );
+              } else if (fonte && typeof fonte === 'object') {
+                const url = fonte.url || fonte.link;
+                const nome = fonte.nome || fonte.name || fonte.title || fonte.filename;
+                
+                if (url && nome) {
+                  return (
+                    <a
+                      key={index}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Badge 
+                        variant="secondary"
+                        className="hover:bg-secondary/80 cursor-pointer transition-colors"
+                      >
+                        {nome}
+                      </Badge>
+                    </a>
+                  );
+                } else if (nome) {
+                  return (
+                    <Badge key={index} variant="secondary">
+                      {nome}
+                    </Badge>
+                  );
+                }
+              }
+              return null;
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Oraculo() {
   const [pergunta, setPergunta] = useState("");
@@ -287,64 +443,7 @@ export default function Oraculo() {
 
                             {/* Fontes consultadas */}
                             {message.sources && Array.isArray(message.sources) && message.sources.length > 0 && (
-                              <div className="space-y-4">
-                                <h3 className="text-lg font-semibold">Fontes Consultadas</h3>
-                                <div className="bg-muted/30 rounded-lg p-4">
-                                  <ul className="space-y-2">
-                                    {message.sources.map((fonte: any, index: number) => {
-                                      if (typeof fonte === 'string') {
-                                        return (
-                                          <li key={index}>
-                                            <span className="text-muted-foreground">• {fonte}</span>
-                                          </li>
-                                        );
-                                      } else if (fonte && typeof fonte === 'object') {
-                                        const id = fonte.id || fonte.experimentoId || fonte.experiment_id;
-                                        const nome = fonte.nome || fonte.name || fonte.title || fonte.filename;
-                                        const url = fonte.url || fonte.link;
-                                        
-                                        if (id && nome) {
-                                          return (
-                                            <li key={id || index}>
-                                              <Link
-                                                to={`/experimentos/${id}`}
-                                                className="text-primary hover:underline"
-                                              >
-                                                • {nome}
-                                              </Link>
-                                            </li>
-                                          );
-                                        } else if (url && nome) {
-                                          return (
-                                            <li key={index}>
-                                              <a
-                                                href={url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-primary hover:underline"
-                                              >
-                                                • {nome}
-                                              </a>
-                                            </li>
-                                          );
-                                        } else if (nome) {
-                                          return (
-                                            <li key={index}>
-                                              <span className="text-muted-foreground">• {nome}</span>
-                                            </li>
-                                          );
-                                        }
-                                      }
-                                      
-                                      return (
-                                        <li key={index}>
-                                          <span className="text-muted-foreground">• Fonte não identificada</span>
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                </div>
-                              </div>
+                              <AssistantSourcesBadges sources={message.sources} />
                             )}
                           </div>
                         )}
