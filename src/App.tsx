@@ -32,6 +32,7 @@ const Oraculo = lazy(() => import("@/pages/Oraculo"));
 const OraculoRedirect = lazy(() => import("@/pages/OraculoRedirect"));
 const Playbooks = lazy(() => import("@/pages/Playbooks"));
 const Ferramentas = lazy(() => import("@/pages/Ferramentas"));
+const CalculadoraEmail = lazy(() => import("@/pages/ferramentas/CalculadoraEmail"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const TiposExperimento = lazy(() => import("@/pages/admin/TiposExperimento"));
 const GestaoCanais = lazy(() => import("@/pages/admin/GestaoCanais"));
@@ -195,6 +196,14 @@ function App() {
                     element={
                       <LazyWrapper>
                         <Ferramentas />
+                      </LazyWrapper>
+                    }
+                  />
+                  <Route
+                    path="ferramentas/calculadora-email"
+                    element={
+                      <LazyWrapper>
+                        <CalculadoraEmail />
                       </LazyWrapper>
                     }
                   />
