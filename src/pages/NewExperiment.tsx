@@ -505,7 +505,7 @@ export default function NewExperiment() {
       case 3: // Metrics
         return true; // Allow empty metrics
       case 4: // Results (only for realized experiments)
-        return tipoCadastro === 'futuro' || (values.rating !== undefined);
+        return tipoCadastro === 'futuro' || (tipoCadastro === 'realizado' && values.rating !== undefined);
       case 5: // Attachments
         return true; // Optional step
       default:
@@ -1170,14 +1170,14 @@ export default function NewExperiment() {
             </Card>
           )}
 
-          {/* Step 4: Results (only for realized experiments) */}
-          {currentStep === 4 && tipoCadastro === 'realizado' && (
-            isStartInFuture ? (
+          {/* Step 4: Results */}
+          {currentStep === 4 && (
+            tipoCadastro === 'futuro' ? (
               <Card className="p-6 flex flex-col items-center justify-center text-center bg-muted/40 border-dashed">
                 <CalendarClock className="h-8 w-8 mb-4 text-muted-foreground" />
                 <h4 className="font-semibold text-lg">Resultados ainda não disponíveis</h4>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Você poderá documentar os resultados assim que a data de início do experimento for alcançada.
+                  Você poderá documentar os resultados assim que o experimento for realizado.
                 </p>
               </Card>
             ) : (
