@@ -1,6 +1,6 @@
 
 import { useState, useEffect, FormEvent } from "react";
-import { Brain, Loader2, Sparkles, Send } from "lucide-react";
+import { Brain, Loader2, Sparkles, Send, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +19,17 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export default function Oraculo() {
   const [pergunta, setPergunta] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const { enviarPergunta, atualizarMensagemAssistente, carregarHistorico, limparMensagens, loading, messages, erro } = useOraculoAsync();
+  const { 
+    enviarPergunta, 
+    atualizarMensagemAssistente, 
+    carregarHistorico, 
+    limparMensagens, 
+    toggleMessageOrder,
+    loading, 
+    messages, 
+    erro, 
+    messageOrder 
+  } = useOraculoAsync();
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
@@ -123,7 +133,16 @@ export default function Oraculo() {
               <Brain className="w-5 h-5 text-primary" />
               <h1 className="font-semibold">Oráculo</h1>
             </div>
-            <div /> {/* Spacer */}
+            {messages.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={toggleMessageOrder}
+                className="w-8 h-8"
+              >
+                <ArrowUpDown className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         )}
 
@@ -202,9 +221,20 @@ export default function Oraculo() {
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={handleNewConversation}>
-                  Nova Conversa
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={toggleMessageOrder}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowUpDown className="w-4 h-4" />
+                    {messageOrder === 'oldest' ? 'Mais antigas primeiro' : 'Mais recentes primeiro'}
+                  </Button>
+                  <Button variant="outline" onClick={handleNewConversation}>
+                    Nova Conversa
+                  </Button>
+                </div>
               </div>
             )}
 

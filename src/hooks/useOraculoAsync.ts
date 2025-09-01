@@ -17,6 +17,7 @@ export function useOraculoAsync() {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [erro, setErro] = useState<string | null>(null);
+  const [messageOrder, setMessageOrder] = useState<'oldest' | 'newest'>('oldest');
 
   const enviarPergunta = useCallback(async (
     pergunta: string,
@@ -271,14 +272,28 @@ export function useOraculoAsync() {
     setErro(null);
   }, []);
 
+  const toggleMessageOrder = useCallback(() => {
+    setMessageOrder(prev => prev === 'oldest' ? 'newest' : 'oldest');
+  }, []);
+
+  const getSortedMessages = useCallback(() => {
+    if (messageOrder === 'newest') {
+      return [...messages].reverse();
+    }
+    return messages;
+  }, [messages, messageOrder]);
+
   return {
     enviarPergunta,
     atualizarMensagemAssistente,
     carregarHistorico,
     limparMensagens,
+    toggleMessageOrder,
+    getSortedMessages,
     loading,
-    messages,
+    messages: getSortedMessages(),
     erro,
+    messageOrder,
   };
 }
 
