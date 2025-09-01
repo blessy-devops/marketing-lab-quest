@@ -52,7 +52,7 @@ export function ChatHistorySidebar({
         return;
       }
 
-      // A RPC já retorna o formato correto: { conversation_id, title, last_updated }
+      // A RPC agora retorna o formato correto: { conversation_id, title, last_updated }
       setConversations(data || []);
     } catch (error: any) {
       console.error('Erro ao carregar conversas:', error);
