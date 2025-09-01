@@ -43,7 +43,7 @@ export function ChatHistorySidebar({
         }, 15000);
       });
 
-      const dataPromise = supabase
+      const dataPromise = (supabase as any)
         .from('conversations')
         .select('*')
         .order('updated_at', { ascending: false });
@@ -85,11 +85,15 @@ export function ChatHistorySidebar({
         },
         (payload) => {
           const updatedConversation = payload.new as Conversation;
-          setConversations(prev => 
-            prev.map(c => 
+          setConversations(prev => {
+            const updated = prev.map(c => 
               c.id === updatedConversation.id ? updatedConversation : c
-            )
-          );
+            );
+            // Reorder by updated_at desc (most recent first)
+            return updated.sort((a, b) => 
+              new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+            );
+          });
         }
       )
       .subscribe();
