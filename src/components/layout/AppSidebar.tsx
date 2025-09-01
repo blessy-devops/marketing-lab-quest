@@ -55,7 +55,7 @@ export function AppSidebar() {
       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
 
   return (
-    <Sidebar collapsible={isNewExperimentPage ? "offcanvas" : "icon"}>
+    <Sidebar variant="inset" collapsible={isNewExperimentPage ? "offcanvas" : "icon"}>
       <SidebarContent className="p-3 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-2">
         {/* Logo Section */}
         <div className="mb-6 flex items-center justify-center group-data-[collapsible=icon]:justify-center">

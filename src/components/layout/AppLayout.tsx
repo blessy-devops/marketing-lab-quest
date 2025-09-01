@@ -1,4 +1,4 @@
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 import { MobileHeader } from "./MobileHeader";
@@ -26,27 +26,28 @@ export function AppLayout({ children }: AppLayoutProps) {
     >
       <TopProgressBar />
       <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/30">
-        {/* Desktop Sidebar */}
-        <div className="hidden md:block">
-          <AppSidebar />
-        </div>
+        {/* Sidebar - direct sibling */}
+        <AppSidebar />
         
-        <div className="flex-1 flex flex-col">
-          {/* Desktop Header */}
-          <div className="hidden md:block">
-            <AppHeader />
+        {/* Main content area with proper inset */}
+        <SidebarInset>
+          <div className="flex flex-col min-h-screen">
+            {/* Desktop Header */}
+            <div className="hidden md:block">
+              <AppHeader />
+            </div>
+            
+            {/* Mobile Header */}
+            <MobileHeader />
+            
+            <main className="flex-1 min-h-0">
+              {children}
+            </main>
+            
+            {/* Mobile Bottom Navigation */}
+            <MobileBottomNavigation />
           </div>
-          
-          {/* Mobile Header */}
-          <MobileHeader />
-          
-          <main className="flex-1 min-h-0">
-            {children}
-          </main>
-        </div>
-        
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNavigation />
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
