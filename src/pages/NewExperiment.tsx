@@ -605,7 +605,14 @@ export default function NewExperiment() {
               )}
               
               {currentStep === steps.length - 1 ? (
-                <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
+                <Button 
+                  type="submit" 
+                  onClick={handleSubmit} 
+                  disabled={isSubmitting}
+                  className={cn(
+                    isSubmitting && "opacity-50 cursor-not-allowed"
+                  )}
+                >
                   <Save className="w-4 h-4 mr-2" />
                   {tipoCadastro === 'realizado' ? 'Salvar Experimento' : 'Criar Experimento'}
                 </Button>
@@ -1511,7 +1518,14 @@ export default function NewExperiment() {
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
+                <Button 
+                  type="submit" 
+                  onClick={handleSubmit} 
+                  disabled={isSubmitting}
+                  className={cn(
+                    isSubmitting && "opacity-50 cursor-not-allowed"
+                  )}
+                >
                   <Save className="w-4 h-4 mr-2" />
                   {tipoCadastro === 'realizado' ? 'Salvar Experimento' : 'Criar Experimento'}
                 </Button>
