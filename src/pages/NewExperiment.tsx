@@ -224,6 +224,21 @@ export default function NewExperiment() {
     }
   }, [tipoCadastro, form]);
 
+  // Resetar data de início se for inválida para o novo tipo de experimento
+  useEffect(() => {
+    const currentDataInicio = form.getValues('data_inicio');
+    if (currentDataInicio) {
+      const now = new Date();
+      const isCurrentDateInvalid = tipoCadastro === 'realizado' 
+        ? currentDataInicio >= now 
+        : currentDataInicio < now;
+      
+      if (isCurrentDateInvalid) {
+        form.setValue('data_inicio', undefined);
+      }
+    }
+  }, [tipoCadastro, form]);
+
   // Helper function to convert values to number or null
   const toNumberOrNull = (v: any) => {
     if (v === '' || v === null || v === undefined) return null;
@@ -733,10 +748,10 @@ export default function NewExperiment() {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={(date) => 
-                                tipoCadastro === 'futuro' 
-                                  ? date < new Date()
-                                  : date >= new Date()
+                              disabled={
+                                tipoCadastro === 'realizado' 
+                                  ? { after: new Date() }
+                                  : { before: new Date() }
                               }
                               initialFocus
                               className="p-3 pointer-events-auto"
