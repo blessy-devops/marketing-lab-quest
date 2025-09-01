@@ -8,7 +8,8 @@ import {
   Users,
   LogOut,
   Brain,
-  BookOpen
+  BookOpen,
+  Wrench
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -29,6 +30,7 @@ const mainItems = [
   { title: "Experimentos", url: "/experimentos", icon: Beaker },
   { title: "Oráculo", url: "/oraculo", icon: Brain },
   { title: "Playbooks", url: "/playbooks", icon: BookOpen },
+  { title: "Ferramentas", url: "/ferramentas", icon: Wrench },
 ];
 
 const analyticsItems = [
