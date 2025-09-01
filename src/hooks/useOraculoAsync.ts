@@ -38,6 +38,16 @@ export function useOraculoAsync() {
     setErro(null);
 
     try {
+      // Obter sessão atual para autenticação
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session.session?.access_token) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
+      // Garantir que a conversa existe antes de enviar a pergunta
+      await ensureConversationExists(conversationId, userId);
+
       // Adicionar mensagem do usuário imediatamente
       const userMessage: Message = {
         id: `user-${Date.now()}`,
@@ -62,13 +72,6 @@ export function useOraculoAsync() {
         conversationId, 
         userId 
       });
-
-      // Obter sessão atual para autenticação
-      const { data: session } = await supabase.auth.getSession();
-      
-      if (!session.session?.access_token) {
-        throw new Error('Sessão expirada. Faça login novamente.');
-      }
 
       // Chamar a Edge Function com autenticação explícita
       const startTime = performance.now();
@@ -147,6 +150,29 @@ export function useOraculoAsync() {
       setLoading(false);
     }
   }, [loading]);
+
+  // Função para garantir que a conversa existe no banco
+  const ensureConversationExists = async (conversationId: string, userId: string) => {
+    try {
+      const { error } = await (supabase as any)
+        .from('conversations')
+        .upsert({ 
+          id: conversationId, 
+          user_id: userId,
+          title: 'Nova Conversa' // O n8n atualizará este título depois
+        }, { onConflict: 'id' });
+      
+      if (error) {
+        console.error('Falha ao garantir a conversa:', error);
+        throw error;
+      }
+      
+      console.log('✅ Conversa garantida no banco:', conversationId);
+    } catch (error) {
+      console.error('Erro ao garantir conversa:', error);
+      throw new Error('Falha ao garantir conversa no banco');
+    }
+  };
 
   // Função auxiliar para fallback (inline para evitar dependência circular)
   const tentarFallback = async (conversationId: string) => {

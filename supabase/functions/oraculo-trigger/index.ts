@@ -73,6 +73,15 @@ serve(async (req) => {
       );
     }
 
+    // Garantir que a conversa existe (defensivo)
+    await supabase
+      .from('conversations')
+      .upsert({ 
+        id: conversationId, 
+        user_id: user.id,
+        title: 'Nova Conversa'
+      }, { onConflict: 'id' });
+
     // Inserir mensagem do usuário no histórico
     const { error: insertUserError } = await supabase
       .from('oraculo_historico')
@@ -91,6 +100,12 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Atualizar timestamp da conversa para manter ordenação correta
+    await supabase
+      .from('conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
 
     // Obter URL do webhook n8n da configuração do app
     let webhookUrl: string | null = null;
